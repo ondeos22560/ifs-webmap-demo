@@ -180,7 +180,29 @@ function showProject(p,fromAdmin=''){
   setRightView(`<div class="selection-head"><button class="back-link" onclick="${fromAdmin?`showAdminByName('${fromAdmin}')`:'showSummaryView()'}">← ${fromAdmin?'Retour à l’unité':'Vue d’ensemble'}</button><div class="eyebrow">PROJET ${p.isReal?'· DONNÉE RÉELLE':''}</div><h2>${p.title}</h2></div><div class="selection-scroll"><div class="tags"><span class="tag">${p.org}</span><span class="tag status">${p.status}</span><span class="tag">${p.theme}</span>${p.isReal?'<span class="tag real-tag">SOURCE IFS 2024</span>':''}</div><div class="detail-grid"><div><small>Territoires couverts</small><strong>${coverage.join(', ')}</strong></div><div><small>Période</small><strong>${p.start}–${p.end}</strong></div><div><small>Bénéficiaires directs documentés</small><strong>${p.beneficiaries?fmt(p.beneficiaries):'Non précisé'}</strong></div><div><small>Budget global</small><strong>${p.budget?fmt(p.budget)+' €':'Non précisé'}</strong></div><div><small>Partenaire / opérateur</small><strong>${p.partner}</strong></div><div><small>Bailleur indiqué</small><strong>${p.funder}</strong></div><div><small>ODD indicatif</small><strong>${p.odd}</strong></div><div><small>Identifiant démo</small><strong>${p.id}</strong></div></div><section class="detail-section"><h4>Résumé</h4><p>${p.summary}</p></section>${source}<div class="actions-row"><button onclick="zoomRealProject('${p.id}')">◎ Voir tout le périmètre</button></div></div>`)
 }
 window.zoomProject=name=>pulseAdmin(name,true);
-window.zoomRealProject=id=>{const names=new Set(projectCoverage(id));const feats=admin2Geo.features.filter(f=>names.has(f.properties.name));if(feats.length)map.fitBounds(L.geoJSON({type:'FeatureCollection',features:feats}).getBounds(),{padding:[55,55],maxZoom:8})};
+function highlightProjectCoverage(id,fit=true){
+  const names=new Set(projectCoverage(id));
+  const feats=admin2Geo.features.filter(f=>names.has(f.properties.name));
+  if(!feats.length)return;
+  if(selectedHighlight){map.removeLayer(selectedHighlight);selectedHighlight=null}
+  clearInterval(selectedPulseTimer);
+  const fc={type:'FeatureCollection',features:feats};
+  selectedHighlight=L.geoJSON(fc,{style:{color:'#ffd34e',weight:7,fillColor:'#ffd34e',fillOpacity:.20,opacity:1},interactive:false}).addTo(map);
+  selectedHighlight.bringToFront();countryHalo.bringToFront();countryLayer.bringToFront();selectedHighlight.bringToFront();
+  if(fit)map.fitBounds(selectedHighlight.getBounds(),{padding:[70,70],maxZoom:8});
+  let on=true,count=0;
+  selectedPulseTimer=setInterval(()=>{
+    if(!selectedHighlight){clearInterval(selectedPulseTimer);return}
+    on=!on;
+    selectedHighlight.setStyle({color:on?'#ffd34e':'#ffffff',weight:on?8:4,fillColor:'#ffd34e',fillOpacity:on?.28:.08,opacity:1});
+    count++;
+    if(count>=6){
+      clearInterval(selectedPulseTimer);
+      if(selectedHighlight)selectedHighlight.setStyle({color:'#ffd34e',weight:5,fillColor:'#ffd34e',fillOpacity:.13,opacity:1});
+    }
+  },280);
+}
+window.zoomRealProject=id=>highlightProjectCoverage(id,true);
 function showAdmin(prop,s){
   lastAdminSelection=prop.name;
   let ps=uniqueProjects(filtered().filter(p=>p.admin2===prop.name));let f=admin2Geo.features.find(x=>x.properties.name===prop.name);let c=L.geoJSON(f).getBounds().getCenter();let sv=`https://www.google.com/maps?q&layer=c&cbll=${c.lat},${c.lng}`;let gm=`https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`;
@@ -198,7 +220,7 @@ function selectAdminFromMap(prop,latlng){
   pulseAdmin(prop.name,false);
 }
 window.showAdminByName=name=>{let f=admin2Geo.features.find(x=>x.properties.name===name);if(f){showAdmin(f.properties,statsFor(name,filtered()));pulseAdmin(name,false)}};
-window.showProjectById=(id,fromAdmin='')=>showProject(projects.find(p=>p.id===id),fromAdmin);window.filterAdmin=name=>{$('fAdmin2').value=name;update(true);showAdminByName(name)};window.showSummaryView=showSummaryView;
+window.showProjectById=(id,fromAdmin='')=>{showProject(projects.find(p=>p.id===id),fromAdmin);highlightProjectCoverage(id,false)};window.filterAdmin=name=>{$('fAdmin2').value=name;update(true);showAdminByName(name)};window.showSummaryView=showSummaryView;
 
 // Sélection robuste par hit-test : le clic simple consulte l'Admin 2, indépendamment de l'ordre des calques Leaflet.
 function pointInRing(latlng,ring){

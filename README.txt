@@ -1,3 +1,9 @@
+V17 - PERIMETRES PROJETS
+
+- Clic sur un projet : surbrillance de toutes les prefectures couvertes.
+- Bouton Voir tout le perimetre : zoom + animation multi-polygones.
+- Le contour jaune reste visible tant qu une autre selection ne le remplace.
+
 WEBMAP INITIATIVE FLEUVE SENEGAL — DEMONSTRATEUR TDR V7
 =========================================================
 
