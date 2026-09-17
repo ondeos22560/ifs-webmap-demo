@@ -65,7 +65,42 @@ const $=id=>document.getElementById(id); const fmt=n=>new Intl.NumberFormat("fr-
 function uniq(a){return [...new Set(a)].sort((x,y)=>String(x).localeCompare(String(y),"fr"))}
 function fillSelect(id,values,first){const el=$(id);let cur=el.value;el.innerHTML=`<option value="">${first}</option>`+values.map(v=>`<option>${v}</option>`).join("");if(values.includes(cur))el.value=cur}
 function initFilters(){fillSelect("fCountry",uniq(projects.map(p=>p.country)),"Tous les pays");fillSelect("fOrg",uniq(projects.map(p=>p.org)),"Toutes");fillSelect("fTheme",uniq(projects.map(p=>p.theme)),"Toutes les thématiques");fillSelect("fFunder",uniq(projects.map(p=>p.funder)),"Tous les bailleurs");fillSelect("fPartner",uniq(projects.map(p=>p.partner)),"Tous les partenaires");fillSelect("fOdg",uniq(projects.map(p=>p.odd)),"Tous les ODD");$("fYearStart").innerHTML=[2021,2022,2023,2024,2025,2026].map(y=>`<option>${y}</option>`).join("");$("fYearEnd").innerHTML=[2021,2022,2023,2024,2025,2026].map(y=>`<option>${y}</option>`).join("");$("fYearStart").value=2021;$("fYearEnd").value=2026;cascade();}
-function cascade(){let c=$("fCountry").value;let r=$("fAdmin1").value;let base=projects.filter(p=>!c||p.country===c);fillSelect("fAdmin1",uniq(base.map(p=>p.region)),"Toutes les régions");r=$("fAdmin1").value;base=base.filter(p=>!r||p.region===r);fillSelect("fAdmin2",uniq(base.map(p=>p.admin2)),"Toutes les unités");}
+function cascade(){
+  // Les listes sont facettées : chaque choix est recalculé à partir des autres filtres actifs.
+  refreshFacetOptions();
+}
+function projectMatchesExcept(p,exceptId){
+  const ys=+$('fYearStart').value,ye=+$('fYearEnd').value;
+  const checks=[
+    ['fCountry',p.country],['fAdmin1',p.region],['fAdmin2',p.admin2],['fOrg',p.org],
+    ['fTheme',p.theme],['fStatus',p.status],['fFunder',p.funder],['fPartner',p.partner],['fOdg',p.odd]
+  ];
+  for(const [id,val] of checks){if(id!==exceptId && $(id).value && $(id).value!==val)return false}
+  if(exceptId!=='fYearStart' && p.end<ys)return false;
+  if(exceptId!=='fYearEnd' && p.start>ye)return false;
+  return true;
+}
+function setFacet(id,field,label){
+  const cur=$(id).value;
+  const values=uniq(projects.filter(p=>projectMatchesExcept(p,id)).map(p=>p[field]));
+  fillSelect(id,values,label);
+  if(cur && values.includes(cur))$(id).value=cur;
+  else if(cur && !values.includes(cur))$(id).value='';
+}
+function refreshFacetOptions(){
+  // Deux passes stabilisent les listes lorsqu'un choix devenu incompatible est retiré.
+  for(let pass=0;pass<2;pass++){
+    setFacet('fCountry','country','Tous les pays');
+    setFacet('fAdmin1','region','Toutes les régions');
+    setFacet('fAdmin2','admin2','Toutes les unités');
+    setFacet('fOrg','org','Toutes');
+    setFacet('fStatus','status','Tous');
+    setFacet('fTheme','theme','Toutes les thématiques');
+    setFacet('fFunder','funder','Tous les bailleurs');
+    setFacet('fPartner','partner','Tous les partenaires');
+    setFacet('fOdg','odd','Tous les ODD');
+  }
+}
 function filtered(){let ys=+$('fYearStart').value,ye=+$('fYearEnd').value;return projects.filter(p=>(!$('fCountry').value||p.country===$('fCountry').value)&&(!$('fAdmin1').value||p.region===$('fAdmin1').value)&&(!$('fAdmin2').value||p.admin2===$('fAdmin2').value)&&(!$('fOrg').value||p.org===$('fOrg').value)&&(!$('fTheme').value||p.theme===$('fTheme').value)&&(!$('fStatus').value||p.status===$('fStatus').value)&&(!$('fFunder').value||p.funder===$('fFunder').value)&&(!$('fPartner').value||p.partner===$('fPartner').value)&&(!$('fOdg').value||p.odd===$('fOdg').value)&&p.end>=ys&&p.start<=ye)}
 function statsFor(adminName,arr){let a=arr.filter(p=>p.admin2===adminName);return {projects:a.length,beneficiaries:a.reduce((s,p)=>s+p.beneficiaries,0),orgs:new Set(a.map(p=>p.org)).size,partners:new Set(a.map(p=>p.partner)).size,funders:new Set(a.map(p=>p.funder)).size}}
 function metricValue(s){return s[$('metric').value]||0}
@@ -94,14 +129,20 @@ function refreshFilterUI(){
   const items=activeFilterItems();
   $('activeCount').textContent=items.length?`${items.length} filtre${items.length>1?'s':''} actif${items.length>1?'s':''}`:'Aucun filtre actif';
   $('activeFilters').innerHTML=items.map(x=>`<button class="filter-chip" data-filter="${x.id}" title="Retirer ce filtre">${x.label} : ${x.value} ×</button>`).join('');
-  document.querySelectorAll('.filter-chip').forEach(b=>b.onclick=()=>{let id=b.dataset.filter;$(id).value=(id==='fYearStart'?2021:id==='fYearEnd'?2026:'');update(true)});
+  document.querySelectorAll('.filter-chip').forEach(b=>b.onclick=()=>{let id=b.dataset.filter;$(id).value=(id==='fYearStart'?2021:id==='fYearEnd'?2026:'');update(true,true)});
   ['fCountry','fAdmin1','fAdmin2','fOrg','fStatus','fTheme','fFunder','fPartner','fOdg'].forEach(id=>$(id).classList.toggle('is-active',!!$(id).value));
   $('fYearStart').classList.toggle('is-active',+$('fYearStart').value!==2021);
   $('fYearEnd').classList.toggle('is-active',+$('fYearEnd').value!==2026);
   const extras=['fFunder','fPartner','fOdg'].filter(id=>$(id).value).length + ( +$('fYearStart').value!==2021 ? 1:0) + (+$('fYearEnd').value!==2026 ? 1:0);
   $('extraBadge').textContent=extras?String(extras):'';
 }
-function update(doZoom=false){cascade();let arr=filtered();renderMap(arr);renderKpis(arr);renderProjects(arr);refreshFilterUI();if(doZoom)zoomToSelection(arr)}
+function update(doZoom=false,resetRight=false){
+  cascade();
+  let arr=filtered();
+  renderMap(arr);renderKpis(arr);renderProjects(arr);refreshFilterUI();
+  if(resetRight)showSummaryView();
+  if(doZoom)zoomToSelection(arr);
+}
 let selectedHighlight=null,selectedPulseTimer=null,lastAdminSelection=null;
 function ensureRightVisible(){
   if(innerWidth<=1280){$('rightPanel').classList.add('summary-open');$('leftPanel').classList.remove('open')}
@@ -136,13 +177,10 @@ function openAdminPopup(prop,latlng){
   L.popup({closeButton:true,autoPan:false,maxWidth:230}).setLatLng(latlng).setContent(`<div class="popup compact-popup"><h3>${prop.name}</h3><div class="muted">${prop.region} · ${prop.country}</div><div class="compact-line"><strong>${s.projects}</strong> projet${s.projects>1?'s':''} · <strong>${fmt(s.beneficiaries)}</strong> bénéficiaires</div><div class="muted">Double-clic : information rapide</div></div>`).openOn(map);
 }
 function selectAdminFromMap(prop,latlng){
+  // Le clic carte sert à consulter une unité, sans modifier les filtres d'analyse à gauche.
   map.closePopup();
-  $('fCountry').value=prop.country;cascade();
-  $('fAdmin1').value=prop.region;cascade();
-  $('fAdmin2').value=prop.name;
-  update(false);
-  const s=statsFor(prop.name,filtered());
-  showAdmin(prop,s);
+  const current=filtered();
+  showAdmin(prop,statsFor(prop.name,current));
   pulseAdmin(prop.name,false);
 }
 window.showAdminByName=name=>{let f=admin2Geo.features.find(x=>x.properties.name===name);if(f){showAdmin(f.properties,statsFor(name,filtered()));pulseAdmin(name,false)}};
@@ -317,7 +355,13 @@ document.querySelectorAll('.basemap-option').forEach(btn=>btn.onclick=()=>{
   closeMapPanels();
 });
 document.addEventListener('click',e=>{if(!e.target.closest('.map-toolbox'))closeMapPanels()});
-['fCountry','fAdmin1','fAdmin2','fOrg','fTheme','fStatus','fFunder','fPartner','fOdg','fYearStart','fYearEnd','metric','toggleHistoric','togglePopulation','toggleHydro','toggleBasin'].forEach(id=>$(id).addEventListener('change',()=>update(['fCountry','fAdmin1','fAdmin2','fOrg','fTheme','fStatus','fFunder','fPartner','fOdg'].includes(id))));
+const analysisFilterIds=['fCountry','fAdmin1','fAdmin2','fOrg','fTheme','fStatus','fFunder','fPartner','fOdg','fYearStart','fYearEnd'];
+analysisFilterIds.forEach(id=>$(id).addEventListener('change',()=>{
+  const doZoom=['fCountry','fAdmin1','fAdmin2','fOrg','fTheme','fStatus','fFunder','fPartner','fOdg'].includes(id);
+  // Tout changement d'analyse invalide une ancienne fiche projet/unité : retour automatique à la synthèse filtrée.
+  update(doZoom,true);
+}));
+['metric','toggleHistoric','togglePopulation','toggleHydro','toggleBasin'].forEach(id=>$(id).addEventListener('change',()=>update(false,false)));
 
 if(new URLSearchParams(location.search).get('embed')==='1'){document.body.classList.add('embed');document.querySelector('.topbar').style.display='none';document.querySelector('.layout').style.height='100vh'}
 initFilters();update(false);

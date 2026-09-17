@@ -52,4 +52,6 @@ V9 - Selection cartographique
 - clic sur un projet : detail dans le panneau droit, puis Voir sur la carte avec animation de reperage
 - popup libre Vue terrain / Google Maps conservee pour les clics hors polygones
 
-V10 : clic simple sur une unite Admin 2 = synchronisation des filtres + panneau droit + animation ; double-clic = popup ; boutons de repli repositionnes sur les separateurs.
+V11 : clic simple sur une unite Admin 2 = synchronisation des filtres + panneau droit + animation ; double-clic = popup ; boutons de repli repositionnes sur les separateurs.
+
+V11 : clic simple sur Admin 2 = consultation du panneau droit sans modifier les filtres. Les listes de filtres sont facettees et tout changement de filtre ramene automatiquement le panneau droit a la vue d ensemble filtree.
