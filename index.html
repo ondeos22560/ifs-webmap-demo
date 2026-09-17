@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Démonstrateur WebMap Initiative Fleuve Sénégal - données fictives" />
+  <title>Initiative Fleuve Sénégal — WebMap Démo</title>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="preconnect" href="https://tile.openstreetmap.org">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo-mark">IFS</div>
+      <div>
+        <h1>Initiative Fleuve Sénégal</h1>
+        <p>Cartographie des actions 2021–2026 <span class="demo-badge">DÉMONSTRATEUR</span></p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="ghost" id="btnAbout">À propos</button>
+      <button class="primary" id="btnReset">Réinitialiser</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="sidebar left-panel">
+      <div class="panel-title-row">
+        <div>
+          <span class="eyebrow">ANALYSE</span>
+          <h2>Filtres</h2>
+        </div>
+        <span class="count-pill" id="visibleProjects">0 projets</span>
+      </div>
+
+      <div class="filter-block">
+        <label>Pays</label>
+        <select id="countryFilter"><option value="">Tous les pays</option></select>
+      </div>
+      <div class="filter-block">
+        <label>Région (Admin 1)</label>
+        <select id="regionFilter"><option value="">Toutes les régions</option></select>
+      </div>
+      <div class="filter-block">
+        <label>Unité Admin 2</label>
+        <select id="admin2Filter"><option value="">Toutes les unités</option></select>
+      </div>
+      <div class="filter-grid">
+        <div class="filter-block"><label>Organisation</label><select id="orgFilter"><option value="">Toutes</option></select></div>
+        <div class="filter-block"><label>État</label><select id="statusFilter"><option value="">Tous</option><option>En cours</option><option>Terminé</option></select></div>
+      </div>
+      <div class="filter-block"><label>Thématique</label><select id="themeFilter"><option value="">Toutes les thématiques</option></select></div>
+      <div class="filter-block"><label>Bailleur</label><select id="funderFilter"><option value="">Tous les bailleurs</option></select></div>
+      <div class="filter-block"><label>Partenaire</label><select id="partnerFilter"><option value="">Tous les partenaires</option></select></div>
+
+      <div class="filter-block">
+        <label>Période de mise en œuvre</label>
+        <div class="year-row"><select id="yearStart"></select><span>à</span><select id="yearEnd"></select></div>
+      </div>
+
+      <div class="divider"></div>
+      <span class="eyebrow">CARTE</span>
+      <div class="filter-block"><label>Indicateur représenté</label>
+        <select id="metricSelect">
+          <option value="projects">Nombre de projets</option>
+          <option value="beneficiaries">Bénéficiaires</option>
+          <option value="organizations">Intervenants</option>
+          <option value="partners">Partenaires</option>
+          <option value="funders">Bailleurs</option>
+        </select>
+      </div>
+      <label class="toggle-row"><input type="checkbox" id="historicalToggle"><span>Afficher la couche historique 2010–2020</span></label>
+      <p class="small-note">Les données 2021–2026 de cette maquette sont fictives. La couche historique illustre le principe demandé dans les TDR.</p>
+
+      <div class="divider"></div>
+      <span class="eyebrow">MISE À JOUR</span>
+      <button class="secondary full" id="btnImport">Importer un CSV</button>
+      <input type="file" id="csvInput" accept=".csv,text/csv" hidden />
+      <a class="text-link" href="sample_projects.csv" download>Télécharger le modèle CSV</a>
+    </aside>
+
+    <section class="map-area">
+      <div id="map"></div>
+      <div class="map-floating legend-card">
+        <div class="legend-head"><span id="legendMetric">Nombre de projets</span><span id="legendScope">Admin 2</span></div>
+        <div class="legend-gradient"></div>
+        <div class="legend-labels"><span id="legendMin">0</span><span id="legendMax">0</span></div>
+      </div>
+      <button class="map-floating mobile-filter" id="btnFilters">☰ Filtres</button>
+    </section>
+
+    <aside class="sidebar right-panel">
+      <div class="panel-title-row">
+        <div><span class="eyebrow">SYNTHÈSE</span><h2>Vue d’ensemble</h2></div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi"><span>Projets</span><strong id="kpiProjects">0</strong></div>
+        <div class="kpi"><span>Bénéficiaires</span><strong id="kpiBeneficiaries">0</strong></div>
+        <div class="kpi"><span>Intervenants</span><strong id="kpiOrgs">0</strong></div>
+        <div class="kpi"><span>Partenaires</span><strong id="kpiPartners">0</strong></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-head"><h3>Répartition par thématique</h3><span id="themeCount">0</span></div>
+        <div id="themeChart" class="bar-chart"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-head"><h3>Projets par année</h3></div>
+        <div id="yearChart" class="spark-bars"></div>
+      </div>
+
+      <div class="projects-head"><h3>Projets visibles</h3><button class="ghost tiny" id="sortBtn">Récent ↕</button></div>
+      <div id="projectList" class="project-list"></div>
+    </aside>
+  </main>
+
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <section class="drawer" id="projectDrawer" aria-hidden="true">
+    <button class="drawer-close" id="drawerClose">×</button>
+    <div id="drawerContent"></div>
+  </section>
+
+  <div class="modal-backdrop" id="modalBackdrop"></div>
+  <section class="modal" id="aboutModal" aria-hidden="true">
+    <button class="drawer-close" id="modalClose">×</button>
+    <span class="eyebrow">DÉMONSTRATEUR</span>
+    <h2>Une proposition de WebMap légère et évolutive</h2>
+    <p>Cette maquette illustre une architecture « carte + filtres + indicateurs + fiches projets » adaptée aux TDR de l’Initiative Fleuve Sénégal. Elle fonctionne directement dans le navigateur et peut être intégrée en iframe.</p>
+    <div class="modal-grid">
+      <div><strong>Front-end</strong><span>Leaflet + JavaScript natif</span></div>
+      <div><strong>Données</strong><span>GeoJSON + CSV / API</span></div>
+      <div><strong>Évolutif</strong><span>PostgreSQL/PostGIS possible</span></div>
+      <div><strong>Diffusion</strong><span>Page autonome + iframe</span></div>
+    </div>
+    <p class="small-note">Pour la production : remplacer les géométries de démonstration par les limites administratives officielles validées et connecter l’import à un stockage persistant.</p>
+  </section>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
