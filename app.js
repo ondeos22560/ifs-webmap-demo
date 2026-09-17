@@ -12,7 +12,7 @@ const adminDefs=[
 ["Mali","Kayes","Kayes",[-11.8,14.1,-10.8,15.0]], ["Mali","Kayes","Bafoulabé",[-11.5,13.2,-10.2,14.2]], ["Mali","Kayes","Yélimané",[-11.4,14.6,-10.2,15.6]], ["Mali","Kayes","Kéniéba",[-12.3,12.7,-11.0,13.8]],
 ["Guinée","Labé","Labé",[-12.6,11.0,-11.3,12.2]], ["Guinée","Labé","Mali",[-12.5,11.8,-11.2,13.0]], ["Guinée","Mamou","Mamou",[-12.2,9.9,-10.8,11.2]], ["Guinée","Mamou","Dalaba",[-12.3,10.3,-11.2,11.3]], ["Guinée","Faranah","Dabola",[-11.6,10.3,-10.1,11.8]], ["Guinée","Faranah","Dinguiraye",[-11.8,11.3,-10.2,12.5]]
 ];
-function polyFromBox(b,i){const[x1,y1,x2,y2]=b; const j=(i%3)*.06;return [[[x1+j,y1],[x2,y1+.04],[x2-.05,y2-j],[x1,y2+.03],[x1+j,y1]]]]}
+function polyFromBox(b,i){const[x1,y1,x2,y2]=b; const j=(i%3)*.06;return [[[x1+j,y1],[x2,y1+.04],[x2-.05,y2-j],[x1,y2+.03],[x1+j,y1]]]}
 const admin2Geo={type:"FeatureCollection",features:adminDefs.map((d,i)=>({type:"Feature",properties:{country:d[0],region:d[1],name:d[2],id:`a${i}`,population:35000+((i*37991)%260000)},geometry:{type:"Polygon",coordinates:polyFromBox(d[3],i)}}))};
 
 const countryGeo={type:"FeatureCollection",features:[
