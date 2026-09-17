@@ -52,7 +52,7 @@ const tiles={
 let currentBase="Plan OSM"; tiles[currentBase].addTo(map);
 
 const countryHalo=L.geoJSON(countryGeo,{style:{color:"white",weight:6,fill:false,opacity:.95},interactive:false}).addTo(map);
-const countryLayer=L.geoJSON(countryGeo,{style:{color:"#183f34",weight:2.4,fill:false,opacity:1},onEachFeature:(f,l)=>l.bindTooltip(f.properties.name,{permanent:true,direction:"center",className:"country-label"})}).addTo(map);
+const countryLayer=L.geoJSON(countryGeo,{style:{color:"#183f34",weight:2.4,fill:false,opacity:1},interactive:false,onEachFeature:(f,l)=>l.bindTooltip(f.properties.name,{permanent:true,direction:"center",className:"country-label"})}).addTo(map);
 let adminLayer,historicLayer,popLayer;
 let basinLayer=null,hydroLayer=null;
 function hydroStyle(f){let o=Number(f?.properties?.STRAHLER||f?.properties?.order||3);return {color:o>=7?"#1769aa":"#3b8fc6",weight:o>=7?3.8:o>=5?2.6:1.5,opacity:o>=7?.95:.78,lineCap:"round"}}
@@ -105,7 +105,7 @@ function filtered(){let ys=+$('fYearStart').value,ye=+$('fYearEnd').value;return
 function statsFor(adminName,arr){let a=arr.filter(p=>p.admin2===adminName);return {projects:a.length,beneficiaries:a.reduce((s,p)=>s+p.beneficiaries,0),orgs:new Set(a.map(p=>p.org)).size,partners:new Set(a.map(p=>p.partner)).size,funders:new Set(a.map(p=>p.funder)).size}}
 function metricValue(s){return s[$('metric').value]||0}
 function color(v,max){if(!v)return '#eef3f0';let t=Math.min(1,v/(max||1));let light=88-t*48;return `hsl(157 38% ${light}%)`}
-function renderMap(arr){if(adminLayer)map.removeLayer(adminLayer);let vals=admin2Geo.features.map(f=>metricValue(statsFor(f.properties.name,arr)));let max=Math.max(1,...vals);adminLayer=L.geoJSON(admin2Geo,{style:f=>{let s=statsFor(f.properties.name,arr);return {color:'#fff',weight:1.5,fillColor:color(metricValue(s),max),fillOpacity:.88}},onEachFeature:(f,l)=>{let s=statsFor(f.properties.name,arr);l.on('click',e=>{L.DomEvent.stopPropagation(e.originalEvent||e);selectAdminFromMap(f.properties,e.latlng)});l.on('dblclick',e=>{L.DomEvent.stopPropagation(e.originalEvent||e);openAdminPopup(f.properties,e.latlng)});l.bindTooltip(`${f.properties.name} · ${s.projects} projet${s.projects>1?'s':''}`)}}).addTo(map);
+function renderMap(arr){if(adminLayer)map.removeLayer(adminLayer);let vals=admin2Geo.features.map(f=>metricValue(statsFor(f.properties.name,arr)));let max=Math.max(1,...vals);adminLayer=L.geoJSON(admin2Geo,{interactive:false,style:f=>{let s=statsFor(f.properties.name,arr);return {color:'#fff',weight:1.5,fillColor:color(metricValue(s),max),fillOpacity:.88}}}).addTo(map);
 let metricNames={projects:'Nombre de projets',beneficiaries:'Bénéficiaires',orgs:'Intervenants',partners:'Partenaires',funders:'Bailleurs'};$('legend').innerHTML=`<b>${metricNames[$('metric').value]}</b><span style="float:right;color:#6b7c76">Admin 2</span><div class="ramp"></div><div class="ends"><span>0</span><span>${fmt(max)}</span></div>`;
 if($('toggleHistoric').checked){if(historicLayer)map.removeLayer(historicLayer);historicLayer=L.geoJSON(admin2Geo,{style:f=>{let h=historic.find(x=>x.admin2===f.properties.name);return {color:'#7d4d8b',dashArray:'5 4',weight:2,fillColor:'#b892c1',fillOpacity:h?.projects?0.22:0}},interactive:false}).addTo(map)}else if(historicLayer){map.removeLayer(historicLayer);historicLayer=null}
 if($('togglePopulation').checked){if(popLayer)map.removeLayer(popLayer);popLayer=L.geoJSON(admin2Geo,{style:f=>({color:'#c27c00',weight:1.2,fillColor:'#f0bd65',fillOpacity:Math.min(.45,f.properties.population/600000)}),interactive:false}).addTo(map)}else if(popLayer){map.removeLayer(popLayer);popLayer=null}
@@ -186,8 +186,40 @@ function selectAdminFromMap(prop,latlng){
 window.showAdminByName=name=>{let f=admin2Geo.features.find(x=>x.properties.name===name);if(f){showAdmin(f.properties,statsFor(name,filtered()));pulseAdmin(name,false)}};
 window.showProjectById=(id,fromAdmin='')=>showProject(projects.find(p=>p.id===id),fromAdmin);window.filterAdmin=name=>{$('fAdmin2').value=name;update(true);showAdminByName(name)};window.showSummaryView=showSummaryView;
 
+// Sélection robuste par hit-test : le clic simple consulte l'Admin 2, indépendamment de l'ordre des calques Leaflet.
+function pointInRing(latlng,ring){
+  const x=latlng.lng,y=latlng.lat;let inside=false;
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1];
+    const hit=((yi>y)!=(yj>y)) && (x < (xj-xi)*(y-yi)/((yj-yi)||1e-12)+xi);
+    if(hit)inside=!inside;
+  }
+  return inside;
+}
+function featureAtLatLng(latlng){
+  for(let i=admin2Geo.features.length-1;i>=0;i--){
+    const f=admin2Geo.features[i],g=f.geometry;if(!g)continue;
+    if(g.type==='Polygon' && g.coordinates.some(r=>pointInRing(latlng,r)))return f;
+    if(g.type==='MultiPolygon' && g.coordinates.some(poly=>poly.some(r=>pointInRing(latlng,r))))return f;
+  }
+  return null;
+}
+let mapSingleClickTimer=null;
 map.doubleClickZoom.disable();
-map.on('dblclick',e=>{let sv=`https://www.google.com/maps?q&layer=c&cbll=${e.latlng.lat},${e.latlng.lng}`;let gm=`https://www.google.com/maps/search/?api=1&query=${e.latlng.lat},${e.latlng.lng}`;L.popup().setLatLng(e.latlng).setContent(`<div class="popup"><h3>Point cartographique</h3><div class="muted">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</div><div class="actions-row"><a target="_blank" href="${sv}">👁 Vue terrain</a><a target="_blank" href="${gm}">📍 Google Maps</a></div></div>`).openOn(map)});
+map.on('click',e=>{
+  clearTimeout(mapSingleClickTimer);
+  mapSingleClickTimer=setTimeout(()=>{
+    const f=featureAtLatLng(e.latlng);
+    if(f)selectAdminFromMap(f.properties,e.latlng);
+  },260);
+});
+map.on('mousemove',e=>{map.getContainer().style.cursor=featureAtLatLng(e.latlng)?'pointer':''});
+map.on('mouseout',()=>{map.getContainer().style.cursor=''});
+map.on('dblclick',e=>{
+  clearTimeout(mapSingleClickTimer);mapSingleClickTimer=null;
+  let sv=`https://www.google.com/maps?q&layer=c&cbll=${e.latlng.lat},${e.latlng.lng}`;let gm=`https://www.google.com/maps/search/?api=1&query=${e.latlng.lat},${e.latlng.lng}`;
+  L.popup().setLatLng(e.latlng).setContent(`<div class="popup"><h3>Point cartographique</h3><div class="muted">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</div><div class="actions-row"><a target="_blank" href="${sv}">👁 Vue terrain</a><a target="_blank" href="${gm}">📍 Google Maps</a></div></div>`).openOn(map)
+});
 
 function openModal(title,html){$('modalTitle').textContent=title;$('modalBody').innerHTML=html;$('modal').classList.remove('hidden')}
 $('btnContext').onclick=()=>openModal('Contexte — Initiative Fleuve Sénégal',`<h4>À propos</h4><p>L’Initiative Fleuve Sénégal est un cadre de concertation entre six associations de solidarité internationale intervenant dans le Bassin du Fleuve Sénégal. Cette maquette reprend les fonctionnalités attendues dans les TDR : consultation agrégée Admin 1 / Admin 2, fiches projets, filtres croisés, indicateurs dynamiques, couches de contexte, historique Traverse 50 et mise à jour simplifiée.</p><h4>Membres</h4><ul>${ORGS.map(o=>`<li>${o}</li>`).join('')}</ul><h4>Diffusion</h4><p>La même application peut être utilisée en page autonome ou embarquée par iframe.</p><div class="iframe-hint">&lt;iframe src="${location.origin}${location.pathname}?embed=1" width="100%" height="760" loading="lazy"&gt;&lt;/iframe&gt;</div>`);
