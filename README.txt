@@ -1,33 +1,30 @@
-WEBMAP INITIATIVE FLEUVE SENEGAL - DEMONSTRATEUR V2
-====================================================
+IFS WEBMAP — DEMONSTRATEUR V4 TDR
+=================================
 
-Version V2 : améliorations UX demandées lors du test.
+Cette version vise à couvrir le cahier des charges fonctionnel fourni :
+- Admin 0 / Admin 1 / Admin 2 (géométries simplifiées de démonstration)
+- agrégation dynamique par unité
+- liste puis fiche projet détaillée
+- indicateurs : projets, bénéficiaires, intervenants, partenaires, bailleurs
+- 10 entrées thématiques (8 + 2 transversales)
+- filtres croisés : géographie, organisation, thématique, bailleur, partenaire, état, ODD, période
+- recalcul simultané carte + indicateurs + graphiques + liste
+- couche historique 2010–2020 simulant Traverse 50
+- couche de contexte population (démonstration)
+- fonds de carte multiples
+- import CSV / Kobo avec contrôle de validité avant import
+- écran de contexte / membres
+- écran d'administration de contenu (maquette)
+- mode iframe avec ?embed=1
+- responsive
+- liens Vue terrain / Google Maps
+- métadonnées SEO de base
 
-Nouveautés principales
-- bouton de mise à jour CSV placé en haut du panneau de filtres ;
-- filtres complémentaires repliables pour limiter le scroll ;
-- contrôle du CSV avant import : colonnes, champs vides, territoire, statut, années, bénéficiaires, doublons possibles ;
-- import impossible tant que des erreurs bloquantes sont présentes ;
-- téléchargement d'un modèle CSV ;
-- zoom automatique après sélection d'un pays, d'une région, d'une unité Admin 2 ou d'un autre filtre de données ;
-- frontières nationales renforcées au-dessus du fond de carte ;
-- libellés pays ;
-- 6 fonds de carte : Plan OSM, Clair, Voyager, Humanitaire, Relief, Satellite ;
-- badge indiquant l'emprise courante de la carte.
+Données : entièrement fictives/simplifiées. Elles ne doivent pas être utilisées comme données officielles.
 
-IMPORTANT
-- Les projets 2021-2026 et les Admin 2 restent des DONNEES DE DEMONSTRATION FICTIVES.
-- Les limites nationales utilisées pour l'habillage sont simplifiées (Natural Earth 1:110m).
-- Pour la production, utiliser les limites administratives officielles/validées du projet.
-- L'import CSV de cette maquette ajoute les données uniquement dans la session du navigateur. Une version de production devra écrire dans un stockage persistant.
-
-Publication GitHub Pages
-Remplacer dans le dépôt les fichiers index.html, app.js, style.css, sample_projects.csv et README.txt. La même URL GitHub Pages sera ensuite redéployée automatiquement.
-
-
-V3
---
-- Fonds sans clé API : Plan OSM, OSM France, Humanitaire, CyclOSM, Relief, Satellite.
-- Clic sur la carte : liens Vue terrain (Google Street View si disponible) et Google Maps.
-- Même accès Vue terrain depuis les popups Admin 2.
-- Zoom géographique plus fluide et plus marqué lors des sélections Pays / Région / Admin 2.
+Déploiement GitHub Pages :
+1. Décompresser le ZIP.
+2. Remplacer les fichiers du dépôt GitHub par ceux-ci.
+3. Commit changes.
+4. Attendre le déploiement GitHub Pages.
+5. Si le navigateur affiche une ancienne version : Ctrl+Shift+R.
