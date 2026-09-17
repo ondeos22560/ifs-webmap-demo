@@ -74,3 +74,18 @@ body.dark .popup-kpis div{background:#22312c}body.dark .project-head span{backgr
 body.dark .back-link{background:#1d2b26;color:#bfe5d4;border-color:#3b5048}
 body.dark .back-link:hover{background:#294037}
 body.dark .compact-popup .muted{color:#b8c8c0}
+
+
+/* V10 - selection cartographique synchronisee et controles de panneaux sans chevauchement */
+.panel-collapse{top:50%;transform:translateY(-50%);box-shadow:0 2px 10px #0002}
+.panel-collapse-left{right:-14px}
+.panel-collapse-right{left:-14px}
+.layout.left-collapsed .panel-collapse-left{right:-14px;transform:translateY(-50%) rotate(180deg)}
+.layout.right-collapsed .panel-collapse-right{left:-14px;transform:translateY(-50%) rotate(180deg)}
+.sidebar{overflow:visible}
+.left,.right{position:relative}
+.left{overflow:visible}
+.left .filters,.left .panel-head,.left .update-card{position:relative;z-index:1}
+.right{overflow-y:auto;overflow-x:visible}
+.admin-selected-hint{font-size:10px;color:var(--muted);margin-top:4px}
+@media(max-width:1280px){.right.summary-open .panel-collapse-right{left:-14px;top:50%}}
