@@ -8,7 +8,7 @@
   <title>Initiative Fleuve Sénégal — WebMap</title>
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="style.css?v=15.0">
+  <link rel="stylesheet" href="style.css?v=16.0">
 </head>
 <body>
 <header class="topbar">
@@ -16,7 +16,7 @@
     <div class="logo">IFS</div>
     <div>
       <h1>Initiative Fleuve Sénégal</h1>
-      <div class="subtitle">Cartographie interactive des actions 2021–2026 <span>DÉMONSTRATEUR TDR</span> <span title="V14 : 4 projets IFS réels en Guinée ; géométries administratives séparées des données projets ; import CSV/Excel par relation projet × Admin 2.">V15 · LIMITES GUINÉE CORRIGÉES</span></div>
+      <div class="subtitle">Cartographie interactive des actions 2021–2026 <span>DÉMONSTRATEUR TDR</span> <span title="V14 : 4 projets IFS réels en Guinée ; géométries administratives séparées des données projets ; import CSV/Excel par relation projet × Admin 2.">V16 · PROJETS × PRÉFECTURES</span></div>
     </div>
   </div>
   <nav class="top-actions">
@@ -89,7 +89,7 @@
         <label>Indicateur
           <select id="metric">
             <option value="projects">Nombre de projets</option>
-            <option value="beneficiaries">Bénéficiaires</option>
+            
             <option value="orgs">Intervenants</option>
             <option value="partners">Partenaires</option>
             <option value="funders">Bailleurs</option>
@@ -116,12 +116,12 @@
         <h2>Vue d’ensemble</h2>
       </section>
       <div class="kpis">
-        <div><small>Projets</small><strong id="kProjects">0</strong></div>
+        <div><small>Projets uniques</small><strong id="kProjects">0</strong></div>
         <div><small>Bénéficiaires</small><strong id="kBenef">0</strong></div>
         <div><small>Intervenants</small><strong id="kOrgs">0</strong></div>
         <div><small>Partenaires</small><strong id="kPartners">0</strong></div>
         <div><small>Bailleurs</small><strong id="kFunders">0</strong></div>
-        <div><small>Admin 2 actifs</small><strong id="kAdmin2">0</strong></div>
+        <div><small>Préfectures couvertes</small><strong id="kAdmin2">0</strong></div>
       </div>
       <section class="card"><div class="card-title">Répartition par thématique <span id="themeCount"></span></div><div id="themeChart" class="bars"></div></section>
       <section class="card"><div class="card-title">Projets par année</div><div id="yearChart" class="year-chart"></div></section>
@@ -150,6 +150,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="data/admin0.js?v=9.0"></script>
-<script src="app.js?v=15.0"></script>
+<script src="app.js?v=16.0"></script>
 </body>
 </html>
