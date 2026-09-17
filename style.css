@@ -61,3 +61,16 @@ body.dark .leaflet-control-attribution{background:rgba(23,35,31,.85)!important;c
 body.dark .popup-kpis div{background:#22312c}body.dark .project-head span{background:#22312c}
 @media(max-width:1280px){.panel-resizer,.panel-collapse-right{display:none}.layout.left-collapsed{--left-w:42px!important}.right.summary-open .panel-collapse-right{display:block}}
 @media(max-width:760px){.panel-collapse-left,.panel-resizer{display:none}.layout.left-collapsed{--left-w:1fr!important}.network-status{left:12px;right:12px;bottom:12px;border-radius:12px;text-align:center}}
+
+/* V9 - navigation par selection : panneau droit + animation de reperage */
+.right-view{min-height:0}
+.selection-head{padding:2px 0 10px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.selection-head h2{font-size:20px;line-height:1.2;margin:5px 0 3px}
+.selection-head p{margin:0;color:var(--muted);font-size:12px}
+.selection-scroll{padding-bottom:18px}
+.back-link{border:1px solid var(--line);background:#f4f8f6;color:var(--green);border-radius:9px;padding:7px 9px;font-size:11px;font-weight:800;cursor:pointer;margin-bottom:9px}
+.back-link:hover{background:var(--green3)}
+.compact-popup{min-width:175px}.compact-popup h3{font-size:15px}.compact-popup .compact-line{font-size:11px;margin:7px 0 4px;line-height:1.4}
+body.dark .back-link{background:#1d2b26;color:#bfe5d4;border-color:#3b5048}
+body.dark .back-link:hover{background:#294037}
+body.dark .compact-popup .muted{color:#b8c8c0}

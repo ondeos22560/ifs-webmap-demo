@@ -42,3 +42,12 @@ V8 - ERGONOMIE ET CONDITIONS REELLES D'UTILISATION
 - Mode Jour / Nuit memorise dans le navigateur ; le mode nuit utilise un fond sombre.
 - Alerte discrete en cas de mode hors ligne, connexion 2G / economie de donnees ou erreurs repetitives de tuiles.
 - Les donnees IFS, filtres et indicateurs continuent a fonctionner meme si le fond cartographique est lent ou indisponible.
+
+
+V9 - Selection cartographique
+- suppression de la pastille permanente Bassin du Fleuve Senegal - 4 pays
+- mode nuit independant du fond de carte
+- suppression du fond sombre CARTO necessitant une cle API
+- clic sur une unite Admin 2 : surbrillance animee, popup courte et detail dans le panneau droit
+- clic sur un projet : detail dans le panneau droit, puis Voir sur la carte avec animation de reperage
+- popup libre Vue terrain / Google Maps conservee pour les clics hors polygones

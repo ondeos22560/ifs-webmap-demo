@@ -47,8 +47,7 @@ const tiles={
 "Humanitaire":L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",{...tileOpts,attribution:"© OpenStreetMap contributors, HOT"}),
 "CyclOSM":L.tileLayer("https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",{...tileOpts,attribution:"© CyclOSM, OSM"}),
 "Relief":L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{...tileOpts,attribution:"© OpenTopoMap, OSM"}),
-"Satellite":L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{...tileOpts,attribution:"Tiles © Esri"}),
-"Plan sombre":L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{...tileOpts,subdomains:'abcd',maxZoom:20,attribution:"© OpenStreetMap contributors © CARTO"})
+"Satellite":L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{...tileOpts,attribution:"Tiles © Esri"})
 };
 let currentBase="Plan OSM"; tiles[currentBase].addTo(map);
 
@@ -71,7 +70,7 @@ function filtered(){let ys=+$('fYearStart').value,ye=+$('fYearEnd').value;return
 function statsFor(adminName,arr){let a=arr.filter(p=>p.admin2===adminName);return {projects:a.length,beneficiaries:a.reduce((s,p)=>s+p.beneficiaries,0),orgs:new Set(a.map(p=>p.org)).size,partners:new Set(a.map(p=>p.partner)).size,funders:new Set(a.map(p=>p.funder)).size}}
 function metricValue(s){return s[$('metric').value]||0}
 function color(v,max){if(!v)return '#eef3f0';let t=Math.min(1,v/(max||1));let light=88-t*48;return `hsl(157 38% ${light}%)`}
-function renderMap(arr){if(adminLayer)map.removeLayer(adminLayer);let vals=admin2Geo.features.map(f=>metricValue(statsFor(f.properties.name,arr)));let max=Math.max(1,...vals);adminLayer=L.geoJSON(admin2Geo,{style:f=>{let s=statsFor(f.properties.name,arr);return {color:'#fff',weight:1.5,fillColor:color(metricValue(s),max),fillOpacity:.88}},onEachFeature:(f,l)=>{let s=statsFor(f.properties.name,arr);l.on('click',()=>showAdmin(f.properties,s));l.bindTooltip(`${f.properties.name} · ${s.projects} projet${s.projects>1?'s':''}`)}}).addTo(map);
+function renderMap(arr){if(adminLayer)map.removeLayer(adminLayer);let vals=admin2Geo.features.map(f=>metricValue(statsFor(f.properties.name,arr)));let max=Math.max(1,...vals);adminLayer=L.geoJSON(admin2Geo,{style:f=>{let s=statsFor(f.properties.name,arr);return {color:'#fff',weight:1.5,fillColor:color(metricValue(s),max),fillOpacity:.88}},onEachFeature:(f,l)=>{let s=statsFor(f.properties.name,arr);l.on('click',e=>{L.DomEvent.stopPropagation(e);showAdmin(f.properties,s,e.latlng)});l.bindTooltip(`${f.properties.name} · ${s.projects} projet${s.projects>1?'s':''}`)}}).addTo(map);
 let metricNames={projects:'Nombre de projets',beneficiaries:'Bénéficiaires',orgs:'Intervenants',partners:'Partenaires',funders:'Bailleurs'};$('legend').innerHTML=`<b>${metricNames[$('metric').value]}</b><span style="float:right;color:#6b7c76">Admin 2</span><div class="ramp"></div><div class="ends"><span>0</span><span>${fmt(max)}</span></div>`;
 if($('toggleHistoric').checked){if(historicLayer)map.removeLayer(historicLayer);historicLayer=L.geoJSON(admin2Geo,{style:f=>{let h=historic.find(x=>x.admin2===f.properties.name);return {color:'#7d4d8b',dashArray:'5 4',weight:2,fillColor:'#b892c1',fillOpacity:h?.projects?0.22:0}},interactive:false}).addTo(map)}else if(historicLayer){map.removeLayer(historicLayer);historicLayer=null}
 if($('togglePopulation').checked){if(popLayer)map.removeLayer(popLayer);popLayer=L.geoJSON(admin2Geo,{style:f=>({color:'#c27c00',weight:1.2,fillColor:'#f0bd65',fillOpacity:Math.min(.45,f.properties.population/600000)}),interactive:false}).addTo(map)}else if(popLayer){map.removeLayer(popLayer);popLayer=null}
@@ -81,7 +80,7 @@ countryHalo.bringToFront();countryLayer.bringToFront();}
 function renderKpis(arr){$('countBadge').textContent=`${arr.length} projets`;$('kProjects').textContent=fmt(arr.length);$('kBenef').textContent=fmt(arr.reduce((s,p)=>s+p.beneficiaries,0));$('kOrgs').textContent=new Set(arr.map(p=>p.org)).size;$('kPartners').textContent=new Set(arr.map(p=>p.partner)).size;$('kFunders').textContent=new Set(arr.map(p=>p.funder)).size;$('kAdmin2').textContent=new Set(arr.map(p=>p.admin2)).size;
 let counts=THEMES.map(t=>[t,arr.filter(p=>p.theme===t).length]).filter(x=>x[1]).sort((a,b)=>b[1]-a[1]);$('themeCount').textContent=`${counts.length} actives`;let m=Math.max(1,...counts.map(x=>x[1]));$('themeChart').innerHTML=counts.slice(0,8).map(([t,n])=>`<div class="bar-row"><span>${t}</span><span class="bar-bg"><span class="bar-fill" style="display:block;width:${n/m*100}%"></span></span><b>${n}</b></div>`).join('');
 let years=[2021,2022,2023,2024,2025,2026].map(y=>[y,arr.filter(p=>p.start<=y&&p.end>=y).length]),ym=Math.max(1,...years.map(x=>x[1]));$('yearChart').innerHTML=years.map(([y,n])=>`<div class="year-col"><i style="height:${n/ym*70}px"></i>${String(y).slice(2)}</div>`).join('')}
-function renderProjects(arr){$('projectList').innerHTML=[...arr].sort((a,b)=>b.end-a.end).slice(0,30).map(p=>`<div class="project-card" data-id="${p.id}"><div class="tags"><span class="tag">${p.org}</span><span class="tag status">${p.status}</span></div><h4>${p.title}</h4><div class="project-meta"><span>${p.admin2} · ${p.country}</span><span>${p.start}–${p.end}</span></div></div>`).join('')||'<p class="note">Aucun projet ne correspond aux filtres.</p>';document.querySelectorAll('.project-card').forEach(x=>x.onclick=()=>showProject(projects.find(p=>p.id===x.dataset.id)))}
+function renderProjects(arr){$('projectList').innerHTML=[...arr].sort((a,b)=>b.end-a.end).slice(0,30).map(p=>`<div class="project-card" data-id="${p.id}"><div class="tags"><span class="tag">${p.org}</span><span class="tag status">${p.status}</span></div><h4>${p.title}</h4><div class="project-meta"><span>${p.admin2} · ${p.country}</span><span>${p.start}–${p.end}</span></div></div>`).join('')||'<p class="note">Aucun projet ne correspond aux filtres.</p>';document.querySelectorAll('#projectList .project-card').forEach(x=>x.onclick=()=>showProject(projects.find(p=>p.id===x.dataset.id)))}
 function zoomToSelection(arr){let feats=admin2Geo.features.filter(f=>(!$('fCountry').value||f.properties.country===$('fCountry').value)&&(!$('fAdmin1').value||f.properties.region===$('fAdmin1').value)&&(!$('fAdmin2').value||f.properties.name===$('fAdmin2').value));if($('fCountry').value||$('fAdmin1').value||$('fAdmin2').value){if(feats.length){let l=L.geoJSON({type:'FeatureCollection',features:feats});map.fitBounds(l.getBounds(),{padding:[30,30],maxZoom:$('fAdmin2').value?8:$('fAdmin1').value?7:6})}}else if(arr.length<projects.length&&arr.length){let names=new Set(arr.map(p=>p.admin2));let f=admin2Geo.features.filter(x=>names.has(x.properties.name));if(f.length)map.fitBounds(L.geoJSON({type:'FeatureCollection',features:f}).getBounds(),{padding:[25,25],maxZoom:7})}}
 function activeFilterItems(){
   const items=[];
@@ -103,10 +102,41 @@ function refreshFilterUI(){
   $('extraBadge').textContent=extras?String(extras):'';
 }
 function update(doZoom=false){cascade();let arr=filtered();renderMap(arr);renderKpis(arr);renderProjects(arr);refreshFilterUI();if(doZoom)zoomToSelection(arr)}
-function showProject(p){$('drawerTitle').textContent=p.title;$('drawerBody').innerHTML=`<div class="tags"><span class="tag">${p.org}</span><span class="tag status">${p.status}</span><span class="tag">${p.theme}</span></div><div class="detail-grid"><div><small>Localisation</small><strong>${p.admin2} · ${p.region} · ${p.country}</strong></div><div><small>Période</small><strong>${p.start}–${p.end}</strong></div><div><small>Bénéficiaires</small><strong>${fmt(p.beneficiaries)}</strong></div><div><small>Budget global</small><strong>${fmt(p.budget)} €</strong></div><div><small>Partenaire technique</small><strong>${p.partner}</strong></div><div><small>Bailleur</small><strong>${p.funder}</strong></div><div><small>ODD</small><strong>${p.odd}</strong></div><div><small>Identifiant</small><strong>${p.id}</strong></div></div><section class="detail-section"><h4>Résumé</h4><p>${p.summary}</p></section><div class="actions-row"><button onclick="zoomProject('${p.admin2}')">Voir sur la carte</button></div>`;$('drawer').classList.remove('hidden')}
-window.zoomProject=name=>{let f=admin2Geo.features.find(x=>x.properties.name===name);if(f)map.fitBounds(L.geoJSON(f).getBounds(),{padding:[60,60],maxZoom:9})};
-function showAdmin(prop,s){let ps=filtered().filter(p=>p.admin2===prop.name);let f=admin2Geo.features.find(x=>x.properties.name===prop.name);let c=L.geoJSON(f).getBounds().getCenter();let sv=`https://www.google.com/maps?q&layer=c&cbll=${c.lat},${c.lng}`;let gm=`https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`;$('drawerTitle').textContent=prop.name;$('drawerBody').innerHTML=`<p class="note">${prop.region} · ${prop.country}</p><div class="detail-grid"><div><small>Projets</small><strong>${s.projects}</strong></div><div><small>Bénéficiaires</small><strong>${fmt(s.beneficiaries)}</strong></div><div><small>Intervenants</small><strong>${s.orgs}</strong></div><div><small>Partenaires</small><strong>${s.partners}</strong></div><div><small>Bailleurs</small><strong>${s.funders}</strong></div><div><small>Population contexte</small><strong>${fmt(prop.population)}</strong></div></div><div class="actions-row"><a target="_blank" href="${sv}">👁 Vue terrain</a><a target="_blank" href="${gm}">📍 Google Maps</a><button onclick="filterAdmin('${prop.name}')">Filtrer sur cette unité</button></div><section class="detail-section"><h4>Projets concernés</h4>${ps.map(p=>`<div class="project-card" onclick="showProjectById('${p.id}')"><h4>${p.title}</h4><div class="project-meta"><span>${p.org}</span><span>${p.start}–${p.end}</span></div></div>`).join('')||'<p class="note">Aucun projet avec les filtres actuels.</p>'}</section>`;$('drawer').classList.remove('hidden')}
-window.showProjectById=id=>showProject(projects.find(p=>p.id===id));window.filterAdmin=name=>{$('fAdmin2').value=name;update(true)};
+let selectedHighlight=null,selectedPulseTimer=null,lastAdminSelection=null;
+function ensureRightVisible(){
+  if(innerWidth<=1280){$('rightPanel').classList.add('summary-open');$('leftPanel').classList.remove('open')}
+  if(layout.classList.contains('right-collapsed')){layout.classList.remove('right-collapsed');localStorage.setItem('ifs-right-collapsed','0')}
+  setTimeout(()=>map.invalidateSize(),120);
+}
+function showSummaryView(){
+  $('selectionView').classList.add('hidden');$('summaryDefault').classList.remove('hidden');lastAdminSelection=null;
+}
+function pulseAdmin(name,fit=true){
+  const f=admin2Geo.features.find(x=>x.properties.name===name);if(!f)return;
+  if(selectedHighlight){map.removeLayer(selectedHighlight);selectedHighlight=null}
+  clearInterval(selectedPulseTimer);
+  selectedHighlight=L.geoJSON(f,{style:{color:'#ffd34e',weight:6,fillColor:'#ffd34e',fillOpacity:.18,opacity:1},interactive:false}).addTo(map);
+  selectedHighlight.bringToFront(); countryHalo.bringToFront(); countryLayer.bringToFront();
+  if(fit)map.fitBounds(L.geoJSON(f).getBounds(),{padding:[70,70],maxZoom:9});
+  let on=true,count=0;selectedPulseTimer=setInterval(()=>{if(!selectedHighlight){clearInterval(selectedPulseTimer);return}on=!on;selectedHighlight.setStyle({color:on?'#ffd34e':'#ffffff',weight:on?7:3,fillOpacity:on?.24:.06});count++;if(count>=6){clearInterval(selectedPulseTimer);setTimeout(()=>{if(selectedHighlight){map.removeLayer(selectedHighlight);selectedHighlight=null}},650)}},280);
+}
+function setRightView(html){$('summaryDefault').classList.add('hidden');$('selectionView').classList.remove('hidden');$('selectionView').innerHTML=html;ensureRightVisible()}
+function showProject(p,fromAdmin=''){
+  if(!p)return;lastAdminSelection=fromAdmin||p.admin2;
+  setRightView(`<div class="selection-head"><button class="back-link" onclick="${fromAdmin?`showAdminByName('${fromAdmin}')`:'showSummaryView()'}">← ${fromAdmin?'Retour à l’unité':'Vue d’ensemble'}</button><div class="eyebrow">PROJET</div><h2>${p.title}</h2></div><div class="selection-scroll"><div class="tags"><span class="tag">${p.org}</span><span class="tag status">${p.status}</span><span class="tag">${p.theme}</span></div><div class="detail-grid"><div><small>Localisation</small><strong>${p.admin2} · ${p.region} · ${p.country}</strong></div><div><small>Période</small><strong>${p.start}–${p.end}</strong></div><div><small>Bénéficiaires</small><strong>${fmt(p.beneficiaries)}</strong></div><div><small>Budget global</small><strong>${fmt(p.budget)} €</strong></div><div><small>Partenaire technique</small><strong>${p.partner}</strong></div><div><small>Bailleur</small><strong>${p.funder}</strong></div><div><small>ODD</small><strong>${p.odd}</strong></div><div><small>Identifiant</small><strong>${p.id}</strong></div></div><section class="detail-section"><h4>Résumé</h4><p>${p.summary}</p></section><div class="actions-row"><button onclick="zoomProject('${p.admin2}')">◎ Voir sur la carte</button></div></div>`)
+}
+window.zoomProject=name=>pulseAdmin(name,true);
+function showAdmin(prop,s,latlng){
+  lastAdminSelection=prop.name;
+  let ps=filtered().filter(p=>p.admin2===prop.name);let f=admin2Geo.features.find(x=>x.properties.name===prop.name);let c=L.geoJSON(f).getBounds().getCenter();let sv=`https://www.google.com/maps?q&layer=c&cbll=${c.lat},${c.lng}`;let gm=`https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`;
+  setRightView(`<div class="selection-head"><button class="back-link" onclick="showSummaryView()">← Vue d’ensemble</button><div class="eyebrow">UNITÉ ADMIN 2</div><h2>${prop.name}</h2><p>${prop.region} · ${prop.country}</p></div><div class="selection-scroll"><div class="detail-grid"><div><small>Projets</small><strong>${s.projects}</strong></div><div><small>Bénéficiaires</small><strong>${fmt(s.beneficiaries)}</strong></div><div><small>Intervenants</small><strong>${s.orgs}</strong></div><div><small>Partenaires</small><strong>${s.partners}</strong></div><div><small>Bailleurs</small><strong>${s.funders}</strong></div><div><small>Population contexte</small><strong>${fmt(prop.population)}</strong></div></div><div class="actions-row"><a target="_blank" href="${sv}">👁 Vue terrain</a><a target="_blank" href="${gm}">📍 Google Maps</a><button onclick="filterAdmin('${prop.name}')">Filtrer sur cette unité</button></div><section class="detail-section"><h4>Projets concernés</h4><div class="project-list">${ps.map(p=>`<div class="project-card" onclick="showProjectById('${p.id}','${prop.name}')"><h4>${p.title}</h4><div class="project-meta"><span>${p.org}</span><span>${p.start}–${p.end}</span></div></div>`).join('')||'<p class="note">Aucun projet avec les filtres actuels.</p>'}</div></section></div>`);
+  pulseAdmin(prop.name,false);
+  const popLatLng=latlng||c;
+  L.popup({closeButton:true,autoPan:false,maxWidth:230}).setLatLng(popLatLng).setContent(`<div class="popup compact-popup"><h3>${prop.name}</h3><div class="muted">${prop.region} · ${prop.country}</div><div class="compact-line"><strong>${s.projects}</strong> projet${s.projects>1?'s':''} · <strong>${fmt(s.beneficiaries)}</strong> bénéficiaires</div><div class="muted">Détail affiché dans le panneau →</div></div>`).openOn(map);
+}
+window.showAdminByName=name=>{let f=admin2Geo.features.find(x=>x.properties.name===name);if(f)showAdmin(f.properties,statsFor(name,filtered()))};
+window.showProjectById=(id,fromAdmin='')=>showProject(projects.find(p=>p.id===id),fromAdmin);window.filterAdmin=name=>{$('fAdmin2').value=name;update(true);showAdminByName(name)};window.showSummaryView=showSummaryView;
+
 
 map.on('click',e=>{let sv=`https://www.google.com/maps?q&layer=c&cbll=${e.latlng.lat},${e.latlng.lng}`;let gm=`https://www.google.com/maps/search/?api=1&query=${e.latlng.lat},${e.latlng.lng}`;L.popup().setLatLng(e.latlng).setContent(`<div class="popup"><h3>Point cartographique</h3><div class="muted">${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</div><div class="actions-row"><a target="_blank" href="${sv}">👁 Vue terrain</a><a target="_blank" href="${gm}">📍 Google Maps</a></div></div>`).openOn(map)});
 
@@ -114,7 +144,7 @@ function openModal(title,html){$('modalTitle').textContent=title;$('modalBody').
 $('btnContext').onclick=()=>openModal('Contexte — Initiative Fleuve Sénégal',`<h4>À propos</h4><p>L’Initiative Fleuve Sénégal est un cadre de concertation entre six associations de solidarité internationale intervenant dans le Bassin du Fleuve Sénégal. Cette maquette reprend les fonctionnalités attendues dans les TDR : consultation agrégée Admin 1 / Admin 2, fiches projets, filtres croisés, indicateurs dynamiques, couches de contexte, historique Traverse 50 et mise à jour simplifiée.</p><h4>Membres</h4><ul>${ORGS.map(o=>`<li>${o}</li>`).join('')}</ul><h4>Diffusion</h4><p>La même application peut être utilisée en page autonome ou embarquée par iframe.</p><div class="iframe-hint">&lt;iframe src="${location.origin}${location.pathname}?embed=1" width="100%" height="760" loading="lazy"&gt;&lt;/iframe&gt;</div>`);
 $('btnAdmin').onclick=()=>openModal('Administration du contenu',`<div class="admin-form"><p>Dans une version de production, cet écran serait protégé par authentification. Pour la maquette, il montre le principe d’édition sans modifier le code.</p><label>Présentation du Bassin<textarea id="ctxText">Territoire de coopération transfrontalière autour du Fleuve Sénégal.</textarea></label><label>Contact / équipe<input value="Initiative Fleuve Sénégal"></label><label>Logo / identité visuelle<input value="Logo IFS (fichier à déposer)"></label><button class="primary" onclick="alert('Maquette : contenu validé localement')">Enregistrer</button><p class="note">La mise à jour des projets s’effectue via le bouton « Mettre à jour les données » avec contrôle préalable des fichiers Excel ou CSV.</p></div>`);
 $('modalClose').onclick=()=>$('modal').classList.add('hidden');$('drawerClose').onclick=()=>$('drawer').classList.add('hidden');
-$('btnHome').onclick=()=>map.fitBounds(DEFAULT_BOUNDS);$('btnReset').onclick=()=>{['fCountry','fAdmin1','fAdmin2','fOrg','fTheme','fStatus','fFunder','fPartner','fOdg'].forEach(id=>$(id).value='');$('fYearStart').value=2021;$('fYearEnd').value=2026;$('toggleHistoric').checked=false;$('togglePopulation').checked=false;$('toggleHydro').checked=true;$('toggleBasin').checked=true;map.fitBounds(DEFAULT_BOUNDS);update(false)};
+$('btnHome').onclick=()=>map.fitBounds(DEFAULT_BOUNDS);$('btnReset').onclick=()=>{showSummaryView();map.closePopup();['fCountry','fAdmin1','fAdmin2','fOrg','fTheme','fStatus','fFunder','fPartner','fOdg'].forEach(id=>$(id).value='');$('fYearStart').value=2021;$('fYearEnd').value=2026;$('toggleHistoric').checked=false;$('togglePopulation').checked=false;$('toggleHydro').checked=true;$('toggleBasin').checked=true;map.fitBounds(DEFAULT_BOUNDS);update(false)};
 
 function parseCSV(text){
   let lines=text.replace(/^\uFEFF/,'').split(/\r?\n/).filter(x=>x.trim());
@@ -219,14 +249,11 @@ function makeResizable(handle,side,min,max){
 }
 makeResizable($('leftResizer'),'left',240,520);makeResizable($('rightResizer'),'right',280,560);
 
-let preDarkBase='Plan OSM';
 function applyTheme(dark,save=true){
   document.body.classList.toggle('dark',dark);
   $('btnTheme').textContent=dark?'☀':'☾'; $('btnTheme').title=dark?'Mode jour':'Mode nuit';
-  if(dark){
-    if(currentBase!=='Plan sombre')preDarkBase=currentBase;
-    switchBasemap('Plan sombre');
-  }else if(currentBase==='Plan sombre') switchBasemap(tiles[preDarkBase]?preDarkBase:'Plan OSM');
+  countryHalo.setStyle({color:dark?'#d7e5de':'white',weight:dark?4.5:6,opacity:dark?.8:.95});
+  countryLayer.setStyle({color:dark?'#87b8a4':'#183f34',weight:dark?2:2.4,opacity:1});
   if(save)localStorage.setItem('ifs-theme',dark?'dark':'light');
 }
 function switchBasemap(name){
@@ -276,7 +303,6 @@ $('btnMapOptions').onclick=e=>{e.stopPropagation();const open=$('mapOptionsPanel
 document.querySelectorAll('.basemap-option').forEach(btn=>btn.onclick=()=>{
   const name=btn.dataset.basemap;if(name===currentBase){closeMapPanels();return}
   switchBasemap(name);
-  if(name==='Plan sombre'&&!document.body.classList.contains('dark')){document.body.classList.add('dark');$('btnTheme').textContent='☀';localStorage.setItem('ifs-theme','dark')}
   closeMapPanels();
 });
 document.addEventListener('click',e=>{if(!e.target.closest('.map-toolbox'))closeMapPanels()});
