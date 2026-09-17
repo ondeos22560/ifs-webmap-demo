@@ -1,4 +1,4 @@
-id,title,country,region,admin2,org,theme,odd,status,start,end,beneficiaries,partner,funder,budget,summary
-DEMO-001,Projet exemple multi-territoires,Guinée,Labé,Mali,Organisation exemple,Gestion des ressources naturelles,ODD 15,En cours,2024,2026,1200,Partenaire exemple,Bailleur exemple,150000,Exemple : même projet répété pour chaque Admin 2 couvert.
-DEMO-001,Projet exemple multi-territoires,Guinée,Labé,Koubia,Organisation exemple,Gestion des ressources naturelles,ODD 15,En cours,2024,2026,1200,Partenaire exemple,Bailleur exemple,150000,Exemple : même projet répété pour chaque Admin 2 couvert.
-DEMO-001,Projet exemple multi-territoires,Guinée,Labé,Tougué,Organisation exemple,Gestion des ressources naturelles,ODD 15,En cours,2024,2026,1200,Partenaire exemple,Bailleur exemple,150000,Exemple : même projet répété pour chaque Admin 2 couvert.
+﻿Identifiant projet,Titre du projet,Pays,Région,Unité Admin 2,Organisation,Thématique,ODD,État,Année de début,Année de fin,Bénéficiaires,Partenaire,Bailleur,Budget (€),Résumé
+DEMO-001,Projet exemple multi-territoires,Guinée,Labé,Mali,Organisation exemple,Gestion des ressources naturelles,ODD 15,En cours,2024,2026,1200,Partenaire exemple,Bailleur exemple,150000,Même projet répété pour chaque unité Admin 2 couverte.
+DEMO-001,Projet exemple multi-territoires,Guinée,Labé,Koubia,Organisation exemple,Gestion des ressources naturelles,ODD 15,En cours,2024,2026,1200,Partenaire exemple,Bailleur exemple,150000,Même projet répété pour chaque unité Admin 2 couverte.
+DEMO-001,Projet exemple multi-territoires,Guinée,Labé,Tougué,Organisation exemple,Gestion des ressources naturelles,ODD 15,En cours,2024,2026,1200,Partenaire exemple,Bailleur exemple,150000,Même projet répété pour chaque unité Admin 2 couverte.

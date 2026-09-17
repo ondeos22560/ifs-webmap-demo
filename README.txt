@@ -1,3 +1,12 @@
+V20 - EXCEL GUIDE ET EN-TETES FRANCAIS
+
+- En-têtes Excel/CSV en français.
+- Pays limité aux 4 pays IFS.
+- Région dépendante du pays.
+- Unité Admin 2 limitée au pays choisi.
+- Thématique, organisation, partenaire et bailleur : listes enrichissables dans LISTES.
+- Import WebMap compatible avec les nouveaux en-têtes français et les anciens en-têtes techniques.
+
 V19 - REFERENTIEL ADMINISTRATIF HOMOGENE 4 PAYS
 
 V17 - PERIMETRES PROJETS

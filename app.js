@@ -291,8 +291,16 @@ function parseWorkbook(buffer){
 }
 function validateData(headers,rows){
   const req=['id','title','country','region','admin2','org','theme','odd','status','start','end','beneficiaries','partner','funder','budget','summary'];
-  headers=headers.map(h=>String(h).trim());
-  rows=rows.map(r=>{let o={};headers.forEach(h=>o[h]=r[h]??'');return o});
+  const aliases={
+    'Identifiant projet':'id','Titre du projet':'title','Pays':'country','Région':'region','Region':'region',
+    'Unité Admin 2':'admin2','Unite Admin 2':'admin2','Organisation':'org','Thématique':'theme','Thematique':'theme',
+    'ODD':'odd','État':'status','Etat':'status','Année de début':'start','Annee de debut':'start','Année de fin':'end','Annee de fin':'end',
+    'Bénéficiaires':'beneficiaries','Beneficiaires':'beneficiaries','Partenaire':'partner','Bailleur':'funder','Budget (€)':'budget','Budget':'budget','Résumé':'summary','Resume':'summary'
+  };
+  const sourceHeaders=headers.map(h=>String(h).trim());
+  const mappedHeaders=sourceHeaders.map(h=>aliases[h]||h);
+  rows=rows.map(r=>{let o={};sourceHeaders.forEach((h,i)=>o[mappedHeaders[i]]=r[h]??'');return o});
+  headers=mappedHeaders;
   let errors=[],warnings=[];
   req.filter(x=>!headers.includes(x)).forEach(x=>errors.push(`Colonne obligatoire manquante : ${x}`));
   if(errors.length)return {rows,errors,warnings,headers};
@@ -314,7 +322,7 @@ function validateData(headers,rows){
   return {rows,errors:[...new Set(errors)],warnings:[...new Set(warnings)],headers};
 }
 function importModal(){
-  openModal('Mettre à jour les données',`<p><strong>Excel (.xlsx) est recommandé</strong>. Une ligne correspond à <strong>un projet × une unité Admin 2</strong>. Un même identifiant projet peut donc apparaître plusieurs fois : aucune géométrie SIG n'est demandée dans le fichier.</p><div id="dropzone" class="dropzone"><strong>Choisir ou déposer un fichier Excel ou CSV</strong><br><span class="note">Formats acceptés : .xlsx, .xls, .csv</span></div><div class="import-links"><a href="modele_import_ifs.xlsx" download>Télécharger le modèle Excel</a><a href="sample_projects.csv" download>Télécharger le modèle CSV</a></div><div class="validation" id="validation"><p class="note">Feuille Excel recommandée : <strong>PROJETS</strong>. Répétez l'ID du projet pour chaque Admin 2 couvert. Colonnes attendues : id, title, country, region, admin2, org, theme, odd, status, start, end, beneficiaries, partner, funder, budget, summary.</p></div>`);
+  openModal('Mettre à jour les données',`<p><strong>Excel (.xlsx) est recommandé</strong>. Une ligne correspond à <strong>un projet × une unité Admin 2</strong>. Un même identifiant projet peut donc apparaître plusieurs fois : aucune géométrie SIG n'est demandée dans le fichier.</p><div id="dropzone" class="dropzone"><strong>Choisir ou déposer un fichier Excel ou CSV</strong><br><span class="note">Formats acceptés : .xlsx, .xls, .csv</span></div><div class="import-links"><a href="modele_import_ifs.xlsx" download>Télécharger le modèle Excel</a><a href="sample_projects.csv" download>Télécharger le modèle CSV</a></div><div class="validation" id="validation"><p class="note">Feuille Excel recommandée : <strong>PROJETS</strong>. Répétez l'ID du projet pour chaque Admin 2 couvert. Les en-têtes sont en français. Le modèle Excel propose des listes de choix : Pays (4 pays IFS), Région et Unité Admin 2 cohérentes avec le pays, ainsi que des listes enrichissables pour la thématique, l'organisation, les partenaires et les bailleurs.</p></div>`);
   setTimeout(()=>{
     const dz=$('dropzone');
     dz.onclick=()=>$('dataInput').click();
