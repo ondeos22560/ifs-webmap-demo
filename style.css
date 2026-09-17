@@ -89,3 +89,6 @@ body.dark .compact-popup .muted{color:#b8c8c0}
 .right{overflow-y:auto;overflow-x:visible}
 .admin-selected-hint{font-size:10px;color:var(--muted);margin-top:4px}
 @media(max-width:1280px){.right.summary-open .panel-collapse-right{left:-14px;top:50%}}
+
+/* V13 — provenance des données réelles */
+.real-tag{background:#e6f5ee!important;color:#0a684d!important;border:1px solid #7cc7aa!important;font-weight:800}.real-source{border:1px solid #8bcdb3;background:#f0faf6;padding:10px;border-radius:10px}.real-source h4{color:#0a684d;margin-top:0}.real-source a{color:#08694e;font-weight:800}

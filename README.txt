@@ -55,3 +55,11 @@ V9 - Selection cartographique
 V11 : clic simple sur une unite Admin 2 = synchronisation des filtres + panneau droit + animation ; double-clic = popup ; boutons de repli repositionnes sur les separateurs.
 
 V11 : clic simple sur Admin 2 = consultation du panneau droit sans modifier les filtres. Les listes de filtres sont facettees et tout changement de filtre ramene automatiquement le panneau droit a la vue d ensemble filtree.
+
+
+V13 — TEST DONNEES REELLES GUINEE
+- 4 projets reels issus de la presentation du 4e atelier Initiative Fleuve Senegal (Labe, 13-14 novembre 2024).
+- Couvertures par prefecture reproduites d'apres les cartes publiees : PGIRN-PBF, MBOP/PNMB, PGIRN-MFD, Femmes Pro-Forets.
+- Limites ADM2 de Guinee chargees dynamiquement depuis GeoBoundaries (source WFP/OCHA, licence CC BY 3.0 IGO). Si indisponible : geometries de secours.
+- Les projets des autres pays restent fictifs et servent uniquement a tester le demonstrateur.
+- Source IFS : https://www.groupe-initiatives.org/IMG/pdf/cartographies_des_projets_en_cours_dans_le_hbfs-v4.pdf
