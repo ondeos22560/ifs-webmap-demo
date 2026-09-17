@@ -1,31 +1,25 @@
-WEBMAP INITIATIVE FLEUVE SENEGAL — DEMONSTRATEUR
-=================================================
+WEBMAP INITIATIVE FLEUVE SENEGAL - DEMONSTRATEUR V2
+====================================================
 
-1. Ouvrir index.html dans Chrome, Edge ou Firefox.
-2. Une connexion Internet est nécessaire pour charger Leaflet et les fonds OpenStreetMap / OpenTopoMap.
-3. Les projets 2021-2026 et les géométries Admin 2 sont des DONNEES DE DEMONSTRATION FICTIVES.
-4. Le bouton « Importer un CSV » lit un fichier côté navigateur et l'ajoute temporairement à la session.
-   Exemple fourni : sample_projects.csv
-5. Aucun serveur ni base de données n'est nécessaire pour cette maquette.
+Version V2 : améliorations UX demandées lors du test.
 
-Fonctions incluses
-------------------
-- Carte Leaflet responsive
-- 4 pays / Admin 1 / Admin 2 de démonstration
-- Filtres croisés : territoire, organisation, thématique, bailleur, partenaire, état, période
-- Recalcul dynamique de la carte, des indicateurs, graphiques et listes
-- 5 indicateurs cartographiques
-- Liste de projets et fiche projet détaillée
-- Couche historique 2010-2020 illustrée
-- Deux fonds de carte
-- Import CSV local + fichier modèle
-- Présentation compatible iframe
+Nouveautés principales
+- bouton de mise à jour CSV placé en haut du panneau de filtres ;
+- filtres complémentaires repliables pour limiter le scroll ;
+- contrôle du CSV avant import : colonnes, champs vides, territoire, statut, années, bénéficiaires, doublons possibles ;
+- import impossible tant que des erreurs bloquantes sont présentes ;
+- téléchargement d'un modèle CSV ;
+- zoom automatique après sélection d'un pays, d'une région, d'une unité Admin 2 ou d'un autre filtre de données ;
+- frontières nationales renforcées au-dessus du fond de carte ;
+- libellés pays ;
+- 6 fonds de carte : Plan OSM, Clair, Voyager, Humanitaire, Relief, Satellite ;
+- badge indiquant l'emprise courante de la carte.
 
-Pour une version de production
--------------------------------
-- Remplacer les géométries simplifiées par les limites administratives officielles validées.
-- Stocker les projets dans une base (PostgreSQL/PostGIS ou solution plus légère selon hébergement).
-- Créer un véritable module d'administration/import avec validation et journal d'erreurs.
-- Ajouter authentification pour l'administration, sauvegardes, logs et procédure de restauration.
-- Valider charte graphique, accessibilité, RGPD, SEO, sécurité et performances.
-- Prévoir la couche historique réelle issue du Traverse n°50.
+IMPORTANT
+- Les projets 2021-2026 et les Admin 2 restent des DONNEES DE DEMONSTRATION FICTIVES.
+- Les limites nationales utilisées pour l'habillage sont simplifiées (Natural Earth 1:110m).
+- Pour la production, utiliser les limites administratives officielles/validées du projet.
+- L'import CSV de cette maquette ajoute les données uniquement dans la session du navigateur. Une version de production devra écrire dans un stockage persistant.
+
+Publication GitHub Pages
+Remplacer dans le dépôt les fichiers index.html, app.js, style.css, sample_projects.csv et README.txt. La même URL GitHub Pages sera ensuite redéployée automatiquement.

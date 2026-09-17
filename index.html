@@ -27,13 +27,15 @@
 
   <main class="app-shell">
     <aside class="sidebar left-panel">
-      <div class="panel-title-row">
+      <div class="panel-title-row compact-title">
         <div>
           <span class="eyebrow">ANALYSE</span>
           <h2>Filtres</h2>
         </div>
         <span class="count-pill" id="visibleProjects">0 projets</span>
       </div>
+      <button class="update-data-btn" id="btnImport"><span>↥</span><strong>Mettre à jour les données</strong><small>CSV / export Kobo</small></button>
+      <input type="file" id="csvInput" accept=".csv,text/csv" hidden />
 
       <div class="filter-block">
         <label>Pays</label>
@@ -52,15 +54,19 @@
         <div class="filter-block"><label>État</label><select id="statusFilter"><option value="">Tous</option><option>En cours</option><option>Terminé</option></select></div>
       </div>
       <div class="filter-block"><label>Thématique</label><select id="themeFilter"><option value="">Toutes les thématiques</option></select></div>
-      <div class="filter-block"><label>Bailleur</label><select id="funderFilter"><option value="">Tous les bailleurs</option></select></div>
-      <div class="filter-block"><label>Partenaire</label><select id="partnerFilter"><option value="">Tous les partenaires</option></select></div>
+      <details class="advanced-filters">
+        <summary>Filtres complémentaires <span>+</span></summary>
+        <div class="advanced-content">
+          <div class="filter-block"><label>Bailleur</label><select id="funderFilter"><option value="">Tous les bailleurs</option></select></div>
+          <div class="filter-block"><label>Partenaire</label><select id="partnerFilter"><option value="">Tous les partenaires</option></select></div>
+          <div class="filter-block">
+            <label>Période de mise en œuvre</label>
+            <div class="year-row"><select id="yearStart"></select><span>à</span><select id="yearEnd"></select></div>
+          </div>
+        </div>
+      </details>
 
-      <div class="filter-block">
-        <label>Période de mise en œuvre</label>
-        <div class="year-row"><select id="yearStart"></select><span>à</span><select id="yearEnd"></select></div>
-      </div>
-
-      <div class="divider"></div>
+      <div class="divider compact-divider"></div>
       <span class="eyebrow">CARTE</span>
       <div class="filter-block"><label>Indicateur représenté</label>
         <select id="metricSelect">
@@ -72,17 +78,12 @@
         </select>
       </div>
       <label class="toggle-row"><input type="checkbox" id="historicalToggle"><span>Afficher la couche historique 2010–2020</span></label>
-      <p class="small-note">Les données 2021–2026 de cette maquette sont fictives. La couche historique illustre le principe demandé dans les TDR.</p>
-
-      <div class="divider"></div>
-      <span class="eyebrow">MISE À JOUR</span>
-      <button class="secondary full" id="btnImport">Importer un CSV</button>
-      <input type="file" id="csvInput" accept=".csv,text/csv" hidden />
-      <a class="text-link" href="sample_projects.csv" download>Télécharger le modèle CSV</a>
+      <p class="small-note data-note">Données de démonstration fictives · limites Admin 2 simplifiées.</p>
     </aside>
 
     <section class="map-area">
       <div id="map"></div>
+      <div class="map-scope-badge" id="mapScope">Bassin du Fleuve Sénégal · 4 pays</div>
       <div class="map-floating legend-card">
         <div class="legend-head"><span id="legendMetric">Nombre de projets</span><span id="legendScope">Admin 2</span></div>
         <div class="legend-gradient"></div>
@@ -136,6 +137,32 @@
       <div><strong>Diffusion</strong><span>Page autonome + iframe</span></div>
     </div>
     <p class="small-note">Pour la production : remplacer les géométries de démonstration par les limites administratives officielles validées et connecter l’import à un stockage persistant.</p>
+  </section>
+
+
+  <div class="modal-backdrop" id="importBackdrop"></div>
+  <section class="modal import-modal" id="importModal" aria-hidden="true">
+    <button class="drawer-close" id="importClose">×</button>
+    <span class="eyebrow">MISE À JOUR DES DONNÉES</span>
+    <h2>Importer un fichier CSV</h2>
+    <p>Le fichier est contrôlé <strong>avant</strong> toute intégration. Aucune donnée n'est ajoutée tant que des erreurs bloquantes subsistent.</p>
+    <div class="csv-help">
+      <div><strong>Format attendu</strong><span>1 ligne = 1 projet · séparateur ; ou , · UTF-8</span></div>
+      <div><strong>Colonnes obligatoires</strong><span>title, country, region, admin2, organization, theme, funder, partner, status, start, end, beneficiaries</span></div>
+    </div>
+    <div class="import-actions">
+      <button class="primary" id="btnChooseCsv">Choisir un CSV</button>
+      <a class="secondary button-link" href="sample_projects.csv" download>Télécharger le modèle</a>
+    </div>
+    <div id="csvValidation" class="validation-box idle">
+      <strong>Aucun fichier sélectionné</strong>
+      <span>Choisissez votre export CSV pour lancer le contrôle automatique.</span>
+    </div>
+    <div id="csvErrors" class="validation-details"></div>
+    <div class="modal-footer">
+      <span id="csvSummary" class="small-note">Le contrôle vérifie également les territoires, dates, statuts et valeurs numériques.</span>
+      <button class="primary" id="btnCommitImport" disabled>Importer les données validées</button>
+    </div>
   </section>
 
   <div class="toast" id="toast"></div>
