@@ -8,7 +8,7 @@
   <title>Initiative Fleuve Sénégal — WebMap</title>
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="style.css?v=4.0">
+  <link rel="stylesheet" href="style.css?v=7.0">
 </head>
 <body>
 <header class="topbar">
@@ -20,9 +20,10 @@
     </div>
   </div>
   <nav class="top-actions">
+    <button id="btnFilters" class="responsive-only">Filtres</button>
+    <button id="btnSummary" class="summary-toggle">Synthèse</button>
     <button id="btnContext">Contexte</button>
     <button id="btnAdmin">Administration</button>
-    <button id="btnReset" class="primary">Réinitialiser</button>
   </nav>
 </header>
 
@@ -31,11 +32,16 @@
     <section class="panel-head">
       <div class="eyebrow">ANALYSE</div>
       <div class="head-row"><h2>Filtres</h2><span id="countBadge" class="badge">0 projets</span></div>
+      <div class="filter-tools">
+        <button id="btnReset" class="reset-filter" title="Réinitialiser tous les filtres">↺ Réinitialiser</button>
+        <span id="activeCount" class="active-count">Aucun filtre actif</span>
+      </div>
+      <div id="activeFilters" class="active-filters" aria-live="polite"></div>
     </section>
 
     <button class="update-card" id="btnImport">
       <span class="icon">↥</span>
-      <span><strong>Mettre à jour les données</strong><small>CSV / export Kobo contrôlé avant import</small></span>
+      <span><strong>Mettre à jour les données</strong><small>Excel recommandé · CSV / export Kobo accepté</small></span>
     </button>
 
     <section class="filters">
@@ -47,8 +53,8 @@
         <label>État<select id="fStatus"><option value="">Tous</option><option>En cours</option><option>Terminé</option></select></label>
       </div>
       <label>Thématique<select id="fTheme"><option value="">Toutes les thématiques</option></select></label>
-      <details>
-        <summary>Filtres complémentaires</summary>
+      <details id="extraFilters">
+        <summary>Filtres complémentaires <span id="extraBadge"></span></summary>
         <label>Bailleur<select id="fFunder"><option value="">Tous les bailleurs</option></select></label>
         <label>Partenaire<select id="fPartner"><option value="">Tous les partenaires</option></select></label>
         <label>ODD<select id="fOdg"><option value="">Tous les ODD</option></select></label>
@@ -58,28 +64,43 @@
         </div>
       </details>
     </section>
-
-    <section class="map-controls">
-      <div class="eyebrow">CARTE</div>
-      <label>Indicateur représenté
-        <select id="metric">
-          <option value="projects">Nombre de projets</option>
-          <option value="beneficiaries">Bénéficiaires</option>
-          <option value="orgs">Intervenants</option>
-          <option value="partners">Partenaires</option>
-          <option value="funders">Bailleurs</option>
-        </select>
-      </label>
-      <label class="check"><input id="toggleHistoric" type="checkbox"> Afficher la couche historique 2010–2020</label>
-      <label class="check"><input id="togglePopulation" type="checkbox"> Afficher la couche de contexte « Population »</label>
-      <p class="note">Les limites et projets de cette maquette sont des données de démonstration simplifiées. La couche historique simule le principe Traverse 50.</p>
-    </section>
   </aside>
 
   <section class="map-wrap">
     <div id="map"></div>
     <div class="map-title">Bassin du Fleuve Sénégal · 4 pays</div>
-    <button id="btnHome" class="map-home" title="Retour au zoom initial">⌂</button>
+    <button id="btnHome" class="map-home" title="Vue générale" aria-label="Vue générale">⌂</button>
+
+    <div class="map-toolbox">
+      <button id="btnBasemap" class="map-tool" title="Fonds de carte" aria-expanded="false">🗺</button>
+      <div id="basemapPanel" class="basemap-panel hidden" role="menu">
+        <div class="basemap-title">Fonds de carte</div>
+        <button data-basemap="Plan OSM" class="basemap-option active">Plan OSM</button>
+        <button data-basemap="OSM France" class="basemap-option">OSM France</button>
+        <button data-basemap="Humanitaire" class="basemap-option">Humanitaire</button>
+        <button data-basemap="CyclOSM" class="basemap-option">CyclOSM</button>
+        <button data-basemap="Relief" class="basemap-option">Relief</button>
+        <button data-basemap="Satellite" class="basemap-option">Satellite</button>
+      </div>
+      <button id="btnMapOptions" class="map-tool" title="Options cartographiques" aria-expanded="false">⚙</button>
+      <div id="mapOptionsPanel" class="map-options-panel hidden">
+        <label>Indicateur
+          <select id="metric">
+            <option value="projects">Nombre de projets</option>
+            <option value="beneficiaries">Bénéficiaires</option>
+            <option value="orgs">Intervenants</option>
+            <option value="partners">Partenaires</option>
+            <option value="funders">Bailleurs</option>
+          </select>
+        </label>
+        <label class="check"><input id="toggleHistoric" type="checkbox"> Historique 2010–2020</label>
+        <label class="check"><input id="toggleHydro" type="checkbox" checked> Réseau hydrographique</label>
+        <label class="check"><input id="toggleBasin" type="checkbox" checked> Emprise indicative du bassin</label>
+        <label class="check"><input id="togglePopulation" type="checkbox"> Contexte « Population »</label>
+        <div class="hydro-note">Hydrographie : HydroSHEDS / FAO via un service public ArcGIS. Un réseau simplifié de secours est utilisé si le service distant est indisponible.</div>
+      </div>
+    </div>
+
     <div id="legend" class="legend"></div>
   </section>
 
@@ -117,8 +138,10 @@
   </div>
 </div>
 
-<input type="file" id="csvInput" accept=".csv,text/csv" hidden>
+<input type="file" id="dataInput" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=4.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="data/admin0.js?v=7.0"></script>
+<script src="app.js?v=7.0"></script>
 </body>
 </html>
