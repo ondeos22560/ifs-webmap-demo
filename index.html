@@ -8,7 +8,7 @@
   <title>Initiative Fleuve Sénégal — WebMap</title>
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="style.css?v=7.0">
+  <link rel="stylesheet" href="style.css?v=8.0">
 </head>
 <body>
 <header class="topbar">
@@ -29,6 +29,8 @@
 
 <main class="layout">
   <aside class="sidebar left" id="leftPanel">
+    <button id="btnCollapseLeft" class="panel-collapse panel-collapse-left" title="Replier les filtres" aria-label="Replier les filtres">‹</button>
+    <div id="leftResizer" class="panel-resizer panel-resizer-left" title="Glisser pour redimensionner"></div>
     <section class="panel-head">
       <div class="eyebrow">ANALYSE</div>
       <div class="head-row"><h2>Filtres</h2><span id="countBadge" class="badge">0 projets</span></div>
@@ -76,12 +78,14 @@
       <div id="basemapPanel" class="basemap-panel hidden" role="menu">
         <div class="basemap-title">Fonds de carte</div>
         <button data-basemap="Plan OSM" class="basemap-option active">Plan OSM</button>
-        <button data-basemap="OSM France" class="basemap-option">OSM France</button>
         <button data-basemap="Humanitaire" class="basemap-option">Humanitaire</button>
         <button data-basemap="CyclOSM" class="basemap-option">CyclOSM</button>
         <button data-basemap="Relief" class="basemap-option">Relief</button>
         <button data-basemap="Satellite" class="basemap-option">Satellite</button>
+        <button data-basemap="Plan sombre" class="basemap-option">Plan sombre</button>
       </div>
+      <button id="btnTheme" class="map-tool" title="Mode nuit" aria-label="Mode nuit">☾</button>
+      <button id="btnFullscreen" class="map-tool" title="Plein écran" aria-label="Plein écran">⛶</button>
       <button id="btnMapOptions" class="map-tool" title="Options cartographiques" aria-expanded="false">⚙</button>
       <div id="mapOptionsPanel" class="map-options-panel hidden">
         <label>Indicateur
@@ -102,9 +106,12 @@
     </div>
 
     <div id="legend" class="legend"></div>
+    <div id="networkStatus" class="network-status hidden" role="status" aria-live="polite"></div>
   </section>
 
   <aside class="sidebar right" id="rightPanel">
+    <button id="btnCollapseRight" class="panel-collapse panel-collapse-right" title="Replier la synthèse" aria-label="Replier la synthèse">›</button>
+    <div id="rightResizer" class="panel-resizer panel-resizer-right" title="Glisser pour redimensionner"></div>
     <section class="panel-head">
       <div class="eyebrow">SYNTHÈSE</div>
       <h2>Vue d’ensemble</h2>
@@ -141,7 +148,7 @@
 <input type="file" id="dataInput" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="data/admin0.js?v=7.0"></script>
-<script src="app.js?v=7.0"></script>
+<script src="data/admin0.js?v=8.0"></script>
+<script src="app.js?v=8.0"></script>
 </body>
 </html>

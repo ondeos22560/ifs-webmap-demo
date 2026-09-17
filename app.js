@@ -38,14 +38,17 @@ function makeProjects(){let out=[];let id=1;adminDefs.forEach((d,a)=>{let count=
 let projects=makeProjects();
 const historic=adminDefs.slice(0,14).map((d,i)=>({id:`H${i+1}`,country:d[0],region:d[1],admin2:d[2],projects:4+Math.floor(seeded(i+51)*11)}));
 
-const map=L.map("map",{zoomControl:true,minZoom:3}).fitBounds(DEFAULT_BOUNDS);
+const map=L.map("map",{zoomControl:true,minZoom:3,preferCanvas:true}).fitBounds(DEFAULT_BOUNDS);
+const connection=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+const lowBandwidth=!!(connection&&(connection.saveData||['slow-2g','2g'].includes(connection.effectiveType)));
+const tileOpts={updateWhenIdle:true,updateWhenZooming:!lowBandwidth,keepBuffer:lowBandwidth?1:2,detectRetina:false,crossOrigin:false};
 const tiles={
-"Plan OSM":L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap contributors"}),
-"OSM France":L.tileLayer("https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap France | © OSM"}),
-"Humanitaire":L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap contributors, HOT"}),
-"CyclOSM":L.tileLayer("https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",{attribution:"© CyclOSM, OSM"}),
-"Relief":L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{attribution:"© OpenTopoMap, OSM"}),
-"Satellite":L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{attribution:"Tiles © Esri"})
+"Plan OSM":L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{...tileOpts,attribution:"© OpenStreetMap contributors"}),
+"Humanitaire":L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",{...tileOpts,attribution:"© OpenStreetMap contributors, HOT"}),
+"CyclOSM":L.tileLayer("https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",{...tileOpts,attribution:"© CyclOSM, OSM"}),
+"Relief":L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{...tileOpts,attribution:"© OpenTopoMap, OSM"}),
+"Satellite":L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{...tileOpts,attribution:"Tiles © Esri"}),
+"Plan sombre":L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{...tileOpts,subdomains:'abcd',maxZoom:20,attribution:"© OpenStreetMap contributors © CARTO"})
 };
 let currentBase="Plan OSM"; tiles[currentBase].addTo(map);
 
@@ -186,6 +189,76 @@ function processImportFile(file){
   if(name.endsWith('.csv'))reader.readAsText(file,'utf-8');else reader.readAsArrayBuffer(file);
 }
 
+
+// V8 - ergonomie avancée : panneaux ajustables, plein écran, thème nuit et connexion dégradée.
+const layout=document.querySelector('.layout');
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+function restorePanelLayout(){
+  const lw=Number(localStorage.getItem('ifs-left-width'))||285;
+  const rw=Number(localStorage.getItem('ifs-right-width'))||330;
+  layout.style.setProperty('--left-w',clamp(lw,240,520)+'px');
+  layout.style.setProperty('--right-w',clamp(rw,280,560)+'px');
+  if(localStorage.getItem('ifs-left-collapsed')==='1') layout.classList.add('left-collapsed');
+  if(localStorage.getItem('ifs-right-collapsed')==='1') layout.classList.add('right-collapsed');
+}
+restorePanelLayout();
+function togglePanel(side){
+  const cls=side==='left'?'left-collapsed':'right-collapsed';
+  layout.classList.toggle(cls);
+  localStorage.setItem(`ifs-${side}-collapsed`,layout.classList.contains(cls)?'1':'0');
+  setTimeout(()=>map.invalidateSize(),220);
+}
+$('btnCollapseLeft').onclick=()=>togglePanel('left');
+$('btnCollapseRight').onclick=()=>togglePanel('right');
+function makeResizable(handle,side,min,max){
+  let active=false;
+  const move=e=>{if(!active)return; const rect=layout.getBoundingClientRect(); const width=side==='left'?e.clientX-rect.left:rect.right-e.clientX; const w=clamp(width,min,max); layout.style.setProperty(side==='left'?'--left-w':'--right-w',w+'px'); localStorage.setItem(`ifs-${side}-width`,String(w)); map.invalidateSize({pan:false});};
+  const up=()=>{active=false;handle.classList.remove('dragging');document.body.style.userSelect='';window.removeEventListener('mousemove',move);window.removeEventListener('mouseup',up)};
+  handle.addEventListener('mousedown',e=>{if(innerWidth<=1280)return;active=true;e.preventDefault();handle.classList.add('dragging');document.body.style.userSelect='none';window.addEventListener('mousemove',move);window.addEventListener('mouseup',up)});
+  handle.addEventListener('dblclick',()=>{const w=side==='left'?285:330;layout.style.setProperty(side==='left'?'--left-w':'--right-w',w+'px');localStorage.setItem(`ifs-${side}-width`,String(w));setTimeout(()=>map.invalidateSize(),20)});
+}
+makeResizable($('leftResizer'),'left',240,520);makeResizable($('rightResizer'),'right',280,560);
+
+let preDarkBase='Plan OSM';
+function applyTheme(dark,save=true){
+  document.body.classList.toggle('dark',dark);
+  $('btnTheme').textContent=dark?'☀':'☾'; $('btnTheme').title=dark?'Mode jour':'Mode nuit';
+  if(dark){
+    if(currentBase!=='Plan sombre')preDarkBase=currentBase;
+    switchBasemap('Plan sombre');
+  }else if(currentBase==='Plan sombre') switchBasemap(tiles[preDarkBase]?preDarkBase:'Plan OSM');
+  if(save)localStorage.setItem('ifs-theme',dark?'dark':'light');
+}
+function switchBasemap(name){
+  if(!tiles[name]||name===currentBase)return;
+  if(tiles[currentBase]&&map.hasLayer(tiles[currentBase]))map.removeLayer(tiles[currentBase]);currentBase=name;tiles[currentBase].addTo(map);tiles[currentBase].bringToBack();
+  document.querySelectorAll('.basemap-option').forEach(x=>x.classList.toggle('active',x.dataset.basemap===name));
+}
+$('btnTheme').onclick=()=>applyTheme(!document.body.classList.contains('dark'));
+applyTheme(localStorage.getItem('ifs-theme')==='dark',false);
+
+async function toggleFullscreen(){
+  try{if(!document.fullscreenElement){await document.documentElement.requestFullscreen()}else{await document.exitFullscreen()}}catch(e){showNetwork('Le plein écran n’est pas autorisé par ce navigateur.','offline',4000)}
+}
+$('btnFullscreen').onclick=toggleFullscreen;
+document.addEventListener('fullscreenchange',()=>{$('btnFullscreen').textContent=document.fullscreenElement?'⤢':'⛶';$('btnFullscreen').title=document.fullscreenElement?'Quitter le plein écran':'Plein écran';setTimeout(()=>map.invalidateSize(),120)});
+
+let networkTimer=null,tileSlowTimer=null,tileErrors=[];
+function showNetwork(text,type='warn',duration=0){const el=$('networkStatus');el.textContent=text;el.className='network-status '+type;clearTimeout(networkTimer);if(duration)networkTimer=setTimeout(()=>el.classList.add('hidden'),duration)}
+function hideNetwork(){clearTimeout(networkTimer);$('networkStatus').classList.add('hidden')}
+function evaluateConnection(){
+  if(!navigator.onLine){showNetwork('Hors connexion · les données IFS restent consultables, le fond peut manquer.','offline');return}
+  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+  if(c&&(c.saveData||['slow-2g','2g'].includes(c.effectiveType))){showNetwork('Connexion lente · chargement cartographique allégé.','warn');return}
+  hideNetwork();
+}
+window.addEventListener('offline',evaluateConnection);window.addEventListener('online',()=>{evaluateConnection();setTimeout(()=>map.eachLayer(l=>{if(l.redraw)l.redraw()}),300)});if(connection)connection.addEventListener?.('change',evaluateConnection);evaluateConnection();
+Object.values(tiles).forEach(layer=>{
+  layer.on('loading',()=>{clearTimeout(tileSlowTimer);tileSlowTimer=setTimeout(()=>{if(navigator.onLine)showNetwork('Fond cartographique lent · les données IFS restent disponibles.','warn')},6500)});
+  layer.on('load',()=>{clearTimeout(tileSlowTimer);tileErrors=[];evaluateConnection()});
+  layer.on('tileerror',()=>{tileErrors.push(Date.now());tileErrors=tileErrors.filter(t=>Date.now()-t<15000);if(tileErrors.length>=3)showNetwork('Fond cartographique perturbé · vous pouvez continuer à utiliser filtres et données.','warn',8000)});
+});
+
 // Panneaux responsifs : la synthèse reste accessible en 4/3 et les filtres sur petit écran.
 if($('btnSummary')) $('btnSummary').onclick=()=>{$('rightPanel').classList.toggle('summary-open');$('leftPanel').classList.remove('open');setTimeout(()=>map.invalidateSize(),120)};
 if($('btnFilters')) $('btnFilters').onclick=()=>{$('leftPanel').classList.toggle('open');$('rightPanel').classList.remove('summary-open');setTimeout(()=>map.invalidateSize(),120)};
@@ -202,8 +275,8 @@ $('btnBasemap').onclick=e=>{e.stopPropagation();const open=$('basemapPanel').cla
 $('btnMapOptions').onclick=e=>{e.stopPropagation();const open=$('mapOptionsPanel').classList.toggle('hidden')===false;$('btnMapOptions').setAttribute('aria-expanded',String(open));if(open)closeMapPanels('options')};
 document.querySelectorAll('.basemap-option').forEach(btn=>btn.onclick=()=>{
   const name=btn.dataset.basemap;if(name===currentBase){closeMapPanels();return}
-  if(tiles[currentBase])map.removeLayer(tiles[currentBase]);currentBase=name;tiles[currentBase].addTo(map);tiles[currentBase].bringToBack();
-  document.querySelectorAll('.basemap-option').forEach(x=>x.classList.toggle('active',x.dataset.basemap===name));
+  switchBasemap(name);
+  if(name==='Plan sombre'&&!document.body.classList.contains('dark')){document.body.classList.add('dark');$('btnTheme').textContent='☀';localStorage.setItem('ifs-theme','dark')}
   closeMapPanels();
 });
 document.addEventListener('click',e=>{if(!e.target.closest('.map-toolbox'))closeMapPanels()});

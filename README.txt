@@ -32,3 +32,13 @@ Déploiement GitHub Pages :
 5. Le versionnage v=6.0 réduit les problèmes de cache ; Ctrl+Shift+R reste utile si nécessaire.
 
 V7 : ajout du réseau hydrographique (service public HydroSHEDS/FAO via ArcGIS avec secours local), emprise indicative du bassin, correction des boutons de popup.
+
+
+V8 - ERGONOMIE ET CONDITIONS REELLES D'UTILISATION
+- Suppression du fond "OSM France".
+- Panneaux Filtres / Synthese repliables et redimensionnables a la souris sur ecran large.
+- Double-clic sur une poignee de panneau : retour a la largeur par defaut.
+- Bouton plein ecran avec sortie plein ecran sans recourir a F11.
+- Mode Jour / Nuit memorise dans le navigateur ; le mode nuit utilise un fond sombre.
+- Alerte discrete en cas de mode hors ligne, connexion 2G / economie de donnees ou erreurs repetitives de tuiles.
+- Les donnees IFS, filtres et indicateurs continuent a fonctionner meme si le fond cartographique est lent ou indisponible.
