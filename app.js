@@ -16,7 +16,7 @@ const adminDefs=[
 function polyFromBox(b,i){const[x1,y1,x2,y2]=b; const j=(i%3)*.06;return [[[x1+j,y1],[x2,y1+.04],[x2-.05,y2-j],[x1,y2+.03],[x1+j,y1]]]}
 let admin2Geo={type:"FeatureCollection",features:adminDefs.map((d,i)=>({type:"Feature",properties:{country:d[0],region:d[1],name:d[2],id:`a${i}`,population:35000+((i*37991)%260000)},geometry:{type:"Polygon",coordinates:polyFromBox(d[3],i)}}))};
 
-const countryGeo=window.COUNTRY_GEOJSON;
+let countryGeo=window.COUNTRY_GEOJSON;
 
 // --- Contexte hydrographique du bassin du fleuve Sénégal ---
 // Un jeu de secours simplifié est affiché immédiatement. Lorsque le service public
@@ -64,8 +64,8 @@ const tiles={
 };
 let currentBase="Plan OSM"; tiles[currentBase].addTo(map);
 
-const countryHalo=L.geoJSON(countryGeo,{style:{color:"white",weight:6,fill:false,opacity:.95},interactive:false}).addTo(map);
-const countryLayer=L.geoJSON(countryGeo,{style:{color:"#183f34",weight:2.4,fill:false,opacity:1},interactive:false,onEachFeature:(f,l)=>l.bindTooltip(f.properties.name,{permanent:true,direction:"center",className:"country-label"})}).addTo(map);
+let countryHalo=L.geoJSON(countryGeo,{style:{color:"white",weight:6,fill:false,opacity:.95},interactive:false}).addTo(map);
+let countryLayer=L.geoJSON(countryGeo,{style:{color:"#183f34",weight:2.4,fill:false,opacity:1},interactive:false,onEachFeature:(f,l)=>l.bindTooltip(f.properties.name,{permanent:true,direction:"center",className:"country-label"})}).addTo(map);
 let adminLayer,historicLayer,popLayer;
 let basinLayer=null,hydroLayer=null;
 function hydroStyle(f){let o=Number(f?.properties?.STRAHLER||f?.properties?.order||3);return {color:o>=7?"#1769aa":"#3b8fc6",weight:o>=7?3.8:o>=5?2.6:1.5,opacity:o>=7?.95:.78,lineCap:"round"}}
@@ -118,8 +118,16 @@ function filtered(){let ys=+$('fYearStart').value,ye=+$('fYearEnd').value;return
 function statsFor(adminName,arr){let a=uniqueProjects(arr.filter(p=>p.admin2===adminName));return {projects:a.length,beneficiaries:a.reduce((s,p)=>s+p.beneficiaries,0),orgs:new Set(a.map(p=>p.org)).size,partners:new Set(a.map(p=>p.partner)).size,funders:new Set(a.map(p=>p.funder)).size}}
 function metricValue(s){return s[$('metric').value]||0}
 function color(v,max){if(!v)return '#dfe7e3';let t=Math.min(1,v/(max||1));let light=76-t*38;return `hsl(157 42% ${light}%)`}
+const ADMIN_TERMS={
+  "Sénégal":{adm1:"Région",adm2:"Département"},
+  "Mali":{adm1:"Région",adm2:"Cercle"},
+  "Mauritanie":{adm1:"Wilaya",adm2:"Moughataa"},
+  "Guinée":{adm1:"Région",adm2:"Préfecture"}
+};
+function adminTerm(country,level='adm2'){return (ADMIN_TERMS[country]||{adm1:'Région',adm2:'Unité Admin 2'})[level]}
+function currentAdminTerm(){return $('fCountry').value?adminTerm($('fCountry').value,'adm2'):'Unité Admin 2'}
 function renderMap(arr){if(adminLayer)map.removeLayer(adminLayer);let vals=admin2Geo.features.map(f=>metricValue(statsFor(f.properties.name,arr)));let max=Math.max(1,...vals);adminLayer=L.geoJSON(admin2Geo,{interactive:false,style:f=>{let s=statsFor(f.properties.name,arr);return {color:metricValue(s)?'#ffffff':'#8fa39a',weight:metricValue(s)?1.6:1.2,fillColor:color(metricValue(s),max),fillOpacity:metricValue(s)?.9:.48}}}).addTo(map);
-let metricNames={projects:'Nombre de projets couvrant la préfecture',orgs:'Intervenants',partners:'Partenaires',funders:'Bailleurs'};$('legend').innerHTML=`<b>${metricNames[$('metric').value]}</b><span style="float:right;color:#6b7c76">Préfecture</span><div class="ramp"></div><div class="ends"><span>0</span><span>${fmt(max)}</span></div>`;
+let term=currentAdminTerm();let metricNames={projects:`Nombre de projets couvrant ${term==='Unité Admin 2'?'l’unité':'le/la '+term.toLowerCase()}`,orgs:'Intervenants',partners:'Partenaires',funders:'Bailleurs'};$('legend').innerHTML=`<b>${metricNames[$('metric').value]}</b><span style="float:right;color:#6b7c76">${term}</span><div class="ramp"></div><div class="ends"><span>0</span><span>${fmt(max)}</span></div>`;
 if($('toggleHistoric').checked){if(historicLayer)map.removeLayer(historicLayer);historicLayer=L.geoJSON(admin2Geo,{style:f=>{let h=historic.find(x=>x.admin2===f.properties.name);return {color:'#7d4d8b',dashArray:'5 4',weight:2,fillColor:'#b892c1',fillOpacity:h?.projects?0.22:0}},interactive:false}).addTo(map)}else if(historicLayer){map.removeLayer(historicLayer);historicLayer=null}
 if($('togglePopulation').checked){if(popLayer)map.removeLayer(popLayer);popLayer=L.geoJSON(admin2Geo,{style:f=>({color:'#c27c00',weight:1.2,fillColor:'#f0bd65',fillOpacity:Math.min(.45,f.properties.population/600000)}),interactive:false}).addTo(map)}else if(popLayer){map.removeLayer(popLayer);popLayer=null}
 if($('toggleBasin').checked){if(!basinLayer)drawBasin();else if(!map.hasLayer(basinLayer))basinLayer.addTo(map)}else if(basinLayer&&map.hasLayer(basinLayer))map.removeLayer(basinLayer);
@@ -206,7 +214,7 @@ window.zoomRealProject=id=>highlightProjectCoverage(id,true);
 function showAdmin(prop,s){
   lastAdminSelection=prop.name;
   let ps=uniqueProjects(filtered().filter(p=>p.admin2===prop.name));let f=admin2Geo.features.find(x=>x.properties.name===prop.name);let c=L.geoJSON(f).getBounds().getCenter();let sv=`https://www.google.com/maps?q&layer=c&cbll=${c.lat},${c.lng}`;let gm=`https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`;
-  setRightView(`<div class="selection-head"><button class="back-link" onclick="showSummaryView()">← Vue d’ensemble</button><div class="eyebrow">${prop.country==='Guinée'?'PRÉFECTURE':'UNITÉ ADMIN 2'}</div><h2>${prop.name}${prop.country==='Guinée'&&prop.name==='Mali'?' <span class="admin-disambig">(préfecture)</span>':''}</h2><p>${prop.country==='Guinée'?'Région de ':''}${prop.region} · ${prop.country}</p></div><div class="selection-scroll"><div class="detail-grid"><div><small>Projets couvrant cette préfecture</small><strong>${s.projects}</strong></div><div><small>Bénéficiaires au niveau préfecture</small><strong>Non territorialisés</strong></div><div><small>Intervenants</small><strong>${s.orgs}</strong></div><div><small>Partenaires</small><strong>${s.partners}</strong></div><div><small>Bailleurs</small><strong>${s.funders}</strong></div><div><small>Population contexte</small><strong>${prop.population?fmt(prop.population):'Non renseignée'}</strong></div></div><div class="actions-row"><a target="_blank" href="${sv}">👁 Vue terrain</a><a target="_blank" href="${gm}">📍 Google Maps</a><button onclick="filterAdmin('${prop.name}')">Filtrer sur cette unité</button></div><section class="detail-section"><h4>Projets couvrant cette préfecture</h4><div class="project-list">${ps.map(p=>`<div class="project-card" onclick="showProjectById('${p.id}','${prop.name}')"><h4>${p.title}</h4><div class="project-meta"><span>${p.org}${p.isReal?' · source IFS':''}</span><span>${p.start}–${p.end}</span></div></div>`).join('')||'<p class="note">Aucun projet avec les filtres actuels.</p>'}</div></section></div>`);
+  setRightView(`<div class="selection-head"><button class="back-link" onclick="showSummaryView()">← Vue d’ensemble</button><div class="eyebrow">${adminTerm(prop.country,'adm2').toUpperCase()}</div><h2>${prop.name}${prop.country==='Guinée'&&prop.name==='Mali'?' <span class="admin-disambig">(préfecture)</span>':''}</h2><p>${prop.region?adminTerm(prop.country,'adm1')+' de '+prop.region+' · ':''}${prop.country}</p></div><div class="selection-scroll"><div class="detail-grid"><div><small>Projets couvrant cette unité</small><strong>${s.projects}</strong></div><div><small>Bénéficiaires au niveau territorial</small><strong>Non territorialisés</strong></div><div><small>Intervenants</small><strong>${s.orgs}</strong></div><div><small>Partenaires</small><strong>${s.partners}</strong></div><div><small>Bailleurs</small><strong>${s.funders}</strong></div><div><small>Population contexte</small><strong>${prop.population?fmt(prop.population):'Non renseignée'}</strong></div></div><div class="actions-row"><a target="_blank" href="${sv}">👁 Vue terrain</a><a target="_blank" href="${gm}">📍 Google Maps</a><button onclick="filterAdmin('${prop.name}')">Filtrer sur cette unité</button></div><section class="detail-section"><h4>Projets couvrant cette unité</h4><div class="project-list">${ps.map(p=>`<div class="project-card" onclick="showProjectById('${p.id}','${prop.name}')"><h4>${p.title}</h4><div class="project-meta"><span>${p.org}${p.isReal?' · source IFS':''}</span><span>${p.start}–${p.end}</span></div></div>`).join('')||'<p class="note">Aucun projet avec les filtres actuels.</p>'}</div></section></div>`);
 }
 function openAdminPopup(prop,latlng){
   const s=statsFor(prop.name,filtered());
@@ -325,7 +333,7 @@ function showValidation(file,res){
   $('validation').innerHTML=html;
   if(!res.errors.length)setTimeout(()=>{$('applyImport').onclick=()=>{
     projects=res.rows.map(r=>({...r,start:+r.start,end:+r.end,beneficiaries:+String(r.beneficiaries).replace(/\s/g,''),budget:+String(r.budget).replace(/\s/g,'').replace(',','.')}));
-    initFilters();update(false,true);
+    initFilters();update(false);loadAllRealBoundaries();
 $('modal').classList.add('hidden');alert('Import réussi : la carte et les indicateurs ont été recalculés.');
   }},0);
 }
@@ -432,60 +440,54 @@ analysisFilterIds.forEach(id=>$(id).addEventListener('change',()=>{
 }));
 ['metric','toggleHistoric','togglePopulation','toggleHydro','toggleBasin'].forEach(id=>$(id).addEventListener('change',()=>update(false,false)));
 
-// V18 : référentiel administratif cohérent pour les 4 pays.
-// Principe : pour chaque pays, ADM0 et ADM2 proviennent de la MEME version geoBoundaries.
-// Les projets restent purement attributaires (CSV/Excel) et sont joints aux ADM2 par leur nom.
-const GEOBOUNDARIES_COMMIT='9469f09';
-const ADMIN_COUNTRIES={
-  'Sénégal':{iso:'SEN',admin1Label:'Région',admin2Label:'Département'},
-  'Mali':{iso:'MLI',admin1Label:'Région',admin2Label:'Cercle'},
-  'Mauritanie':{iso:'MRT',admin1Label:'Wilaya',admin2Label:'Moughataa'},
-  'Guinée':{iso:'GIN',admin1Label:'Région',admin2Label:'Préfecture'}
+// V19 : référentiel administratif homogène pour les quatre pays.
+// Toutes les limites ADM0 et ADM2 proviennent du MEME commit geoBoundaries afin d'éviter
+// les décalages de frontière observés quand plusieurs référentiels étaient mélangés.
+const GEOBOUNDARIES_COMMIT='0f0b6f5fb638e7faf115f876da4e77d8f7fa319f';
+const COUNTRY_REFS={
+  'Sénégal':{iso:'SEN'},
+  'Mali':{iso:'MLI'},
+  'Mauritanie':{iso:'MRT'},
+  'Guinée':{iso:'GIN'}
 };
-const targetAdmin2=new Map(adminDefs.map((d,i)=>[`${d[0]}|${normName(d[2])}`,{country:d[0],region:d[1],name:d[2],population:35000+((i*37991)%260000)}]));
-function normName(x){return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’']/g,'').replace(/[-_]/g,' ').replace(/\s+/g,' ').trim().toLowerCase()}
-function gbUrl(iso,level){return `https://raw.githubusercontent.com/wmgeolab/geoBoundaries/${GEOBOUNDARIES_COMMIT}/releaseData/gbOpen/${iso}/${level}/geoBoundaries-${iso}-${level}_simplified.geojson`}
+const COUNTRY_EN_TO_FR={Senegal:'Sénégal',Mali:'Mali',Mauritania:'Mauritanie',Guinea:'Guinée'};
+function gbUrl(iso,adm){return `https://raw.githubusercontent.com/wmgeolab/geoBoundaries/${GEOBOUNDARIES_COMMIT}/releaseData/gbOpen/${iso}/${adm}/geoBoundaries-${iso}-${adm}_simplified.geojson`}
+function normName(x){return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ').trim()}
+const PROJECT_REGION_LOOKUP=new Map(adminDefs.map(d=>[`${d[0]}|${normName(d[2])}`,d[1]]));
+function knownRegion(country,name){if(country==='Guinée')return guineaRegion(name);return PROJECT_REGION_LOOKUP.get(`${country}|${normName(name)}`)||''}
 async function fetchGeoJSON(url){
-  const r=await fetch(url,{cache:'no-cache'}); if(!r.ok)throw new Error(`HTTP ${r.status}`);
-  const txt=await r.text(); if(txt.trim().startsWith('version https://git-lfs'))throw new Error('Git LFS pointer');
-  const g=JSON.parse(txt); if(!g||!Array.isArray(g.features))throw new Error('GeoJSON invalide'); return g;
+  const r=await fetch(url,{cache:'force-cache'});if(!r.ok)throw new Error(`HTTP ${r.status}`);
+  const txt=await r.text();if(txt.trim().startsWith('version https://git-lfs'))throw new Error('Git LFS pointer');
+  const g=JSON.parse(txt);if(!g||!Array.isArray(g.features))throw new Error('GeoJSON invalide');return g;
 }
-function featureName(f){return f?.properties?.shapeName||f?.properties?.name||f?.properties?.NAME_2||f?.properties?.NAME_1||''}
-async function loadCountryReference(country,cfg){
-  const [adm0,adm2]=await Promise.all([fetchGeoJSON(gbUrl(cfg.iso,'ADM0')),fetchGeoJSON(gbUrl(cfg.iso,'ADM2'))]);
-  const c0=adm0.features.map((f,i)=>({...f,properties:{...f.properties,name:country,country,iso_a3:cfg.iso,realBoundary:true,id:`${cfg.iso}-adm0-${i}`}}));
-  const selected=[];
-  for(const f of adm2.features){
-    const key=`${country}|${normName(featureName(f))}`; const meta=targetAdmin2.get(key); if(!meta)continue;
-    selected.push({...f,properties:{...f.properties,country,region:meta.region,name:meta.name,population:meta.population,realBoundary:true,admin2Label:cfg.admin2Label,admin1Label:cfg.admin1Label,id:`${cfg.iso}-adm2-${selected.length}`}})
-  }
-  const expected=adminDefs.filter(d=>d[0]===country).length;
-  if(selected.length!==expected)console.warn(`IFS V18 ${country}: ${selected.length}/${expected} Admin2 trouvés`,selected.map(f=>f.properties.name));
-  return {country,adm0:c0,adm2:selected,expected};
+function rebuildCountryLayers(){
+  if(countryHalo)map.removeLayer(countryHalo);if(countryLayer)map.removeLayer(countryLayer);
+  countryHalo=L.geoJSON(countryGeo,{style:{color:'white',weight:6,fill:false,opacity:.95},interactive:false}).addTo(map);
+  countryLayer=L.geoJSON(countryGeo,{style:{color:'#183f34',weight:2.4,fill:false,opacity:1},interactive:false,onEachFeature:(f,l)=>l.bindTooltip(f.properties.name,{permanent:true,direction:'center',className:'country-label'})}).addTo(map);
 }
 async function loadAllRealBoundaries(){
-  const loaded=[]; const failed=[];
-  for(const [country,cfg] of Object.entries(ADMIN_COUNTRIES)){
-    try{loaded.push(await loadCountryReference(country,cfg))}catch(e){failed.push(country);console.warn(`IFS V18 : référentiel ${country} indisponible`,e)}
+  const adm0Features=[],adm2Features=[];const failures=[];
+  for(const [country,cfg] of Object.entries(COUNTRY_REFS)){
+    try{
+      const [g0,g2]=await Promise.all([fetchGeoJSON(gbUrl(cfg.iso,'ADM0')),fetchGeoJSON(gbUrl(cfg.iso,'ADM2'))]);
+      g0.features.forEach((f,i)=>adm0Features.push({...f,properties:{...f.properties,name:country,country,id:`${cfg.iso}-adm0-${i}`,realBoundary:true}}));
+      g2.features.forEach((f,i)=>{
+        const raw=f.properties.shapeName||f.properties.name||`ADM2 ${i+1}`;
+        const name=String(raw).trim();
+        adm2Features.push({...f,properties:{...f.properties,country,region:knownRegion(country,name),name,id:`${cfg.iso}-adm2-${i}`,population:0,realBoundary:true}});
+      });
+      console.info(`IFS V19 : ${country} chargé (${g2.features.length} unités ADM2).`);
+    }catch(e){failures.push(country);console.warn(`IFS V19 : référentiel ${country} indisponible`,e)}
   }
-  if(loaded.length){
-    const okCountries=new Set(loaded.map(x=>x.country));
-    // Remplacement des rectangles fictifs uniquement pour les pays chargés.
-    const keep=admin2Geo.features.filter(f=>!okCountries.has(f.properties.country));
-    admin2Geo={type:'FeatureCollection',features:[...keep,...loaded.flatMap(x=>x.adm2)]};
-    // Remplacement des frontières Natural Earth par les ADM0 de la même famille geoBoundaries.
-    const oldCountries=countryGeo.features.filter(f=>!okCountries.has(f.properties.name));
-    const coherentCountries={type:'FeatureCollection',features:[...oldCountries,...loaded.flatMap(x=>x.adm0)]};
-    countryHalo.clearLayers(); countryHalo.addData(coherentCountries);
-    countryLayer.clearLayers(); countryLayer.addData(coherentCountries);
-  }
-  const missingTargets=[];
-  for(const d of adminDefs){if(!admin2Geo.features.some(f=>f.properties.country===d[0]&&normName(f.properties.name)===normName(d[2])))missingTargets.push(`${d[0]} : ${d[2]}`)}
-  if(failed.length||missingTargets.length){
-    showNetwork(`Référentiel administratif partiellement chargé${failed.length?' · échec : '+failed.join(', '):''}${missingTargets.length?' · unités manquantes : '+missingTargets.slice(0,5).join(', ')+(missingTargets.length>5?'…':''):''}`,'warn',12000);
-  }else console.info('IFS V18 : ADM0/ADM2 cohérents chargés pour les 4 pays.');
-  return !failed.length;
+  if(adm0Features.length){countryGeo={type:'FeatureCollection',features:adm0Features};rebuildCountryLayers()}
+  // On ne conserve aucun rectangle fictif pour les pays dont le vrai référentiel a été chargé.
+  const loadedCountries=new Set(adm0Features.map(f=>f.properties.country));
+  const remaining=admin2Geo.features.filter(f=>!loadedCountries.has(f.properties.country));
+  admin2Geo={type:'FeatureCollection',features:[...remaining,...adm2Features]};
+  if(failures.length)showNetwork(`Référentiel administratif indisponible : ${failures.join(', ')}. Les autres pays restent utilisables.`,'warn',9000);
+  update(false,false);
+  return failures.length===0;
 }
 
 if(new URLSearchParams(location.search).get('embed')==='1'){document.body.classList.add('embed');document.querySelector('.topbar').style.display='none';document.querySelector('.layout').style.height='100vh'}
-initFilters();loadAllRealBoundaries().then(()=>update(false,false));
+initFilters();update(false);loadAllRealBoundaries();
