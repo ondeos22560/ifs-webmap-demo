@@ -100,3 +100,11 @@ body.dark .compact-popup .muted{color:#b8c8c0}
 .layout.left-collapsed .panel-collapse-left{right:4px!important;top:10px!important;transform:rotate(180deg)!important}
 .layout.right-collapsed .panel-collapse-right{left:4px!important;top:10px!important;transform:rotate(180deg)!important}
 @media(max-width:1280px){.right.summary-open .panel-collapse-right{display:block!important;left:10px!important;top:10px!important}.right.summary-open .right-view{padding-top:38px}}
+
+/* V22 - lisibilité cartographique / mode sombre */
+#modalClose{background:#eef4f1!important;color:#173b31!important;border:1px solid #cfe0d8!important;font-weight:800;min-width:38px;min-height:36px;display:grid;place-items:center}
+#modalClose:hover{background:#dcebe4!important;color:#0b2b22!important}
+body.dark #modalClose{background:#28453a!important;color:#ffffff!important;border-color:#5f7d71!important}
+body.dark #modalClose:hover{background:#3a5b4e!important;color:#ffffff!important}
+/* Les aplats statistiques laissent le fond de carte lisible. */
+.leaflet-overlay-pane path{transition:fill-opacity .15s ease,stroke-width .15s ease}

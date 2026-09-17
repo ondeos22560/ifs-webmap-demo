@@ -91,3 +91,6 @@ V14 — REFERENTIEL ADMINISTRATIF + IMPORT PROJET x ADMIN2
 
 
 V15 : correction du chargement ADM2 Guinée. L ancien lien GitHub renvoyait un pointeur Git LFS au lieu du GeoJSON. La V15 utilise une révision GeoBoundaries servie comme GeoJSON réel et détecte explicitement les pointeurs LFS.
+
+
+V22 : limites administratives haute précision HPSCGS (avec repli), aplats plus transparents, hydrographie renforcée, croix modale mode sombre, référentiel Excel géographique masqué.
