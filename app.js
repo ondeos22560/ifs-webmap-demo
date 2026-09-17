@@ -277,14 +277,14 @@ function validateData(headers,rows){
     if(sy>ey)errors.push(`Ligne ${n} : année de début supérieure à l'année de fin`);
     if(!Number.isFinite(b)||b<0)errors.push(`Ligne ${n} : bénéficiaires non numériques`);
     if(!Number.isFinite(bu)||bu<0)warnings.push(`Ligne ${n} : budget invalide ou nul`);
-    if(ids.has(r.id))warnings.push(`Ligne ${n} : identifiant en doublon (${r.id})`);
+    if(ids.has(r.id))warnings.push(`Ligne ${n} : même projet sur plusieurs territoires (${r.id}) — relation acceptée`);
     ids.add(r.id);
     if(!THEMES.includes(r.theme))warnings.push(`Ligne ${n} : thématique non standard (${r.theme})`);
   });
   return {rows,errors:[...new Set(errors)],warnings:[...new Set(warnings)],headers};
 }
 function importModal(){
-  openModal('Mettre à jour les données',`<p><strong>Excel (.xlsx) est recommandé</strong> pour les corrections manuelles. Les exports Kobo en CSV restent acceptés. Le fichier est contrôlé avant intégration.</p><div id="dropzone" class="dropzone"><strong>Choisir ou déposer un fichier Excel ou CSV</strong><br><span class="note">Formats acceptés : .xlsx, .xls, .csv</span></div><div class="import-links"><a href="modele_import_ifs.xlsx" download>Télécharger le modèle Excel</a><a href="sample_projects.csv" download>Télécharger le modèle CSV</a></div><div class="validation" id="validation"><p class="note">Feuille Excel recommandée : <strong>PROJETS</strong>. Colonnes attendues : id, title, country, region, admin2, org, theme, odd, status, start, end, beneficiaries, partner, funder, budget, summary.</p></div>`);
+  openModal('Mettre à jour les données',`<p><strong>Excel (.xlsx) est recommandé</strong>. Une ligne correspond à <strong>un projet × une unité Admin 2</strong>. Un même identifiant projet peut donc apparaître plusieurs fois : aucune géométrie SIG n'est demandée dans le fichier.</p><div id="dropzone" class="dropzone"><strong>Choisir ou déposer un fichier Excel ou CSV</strong><br><span class="note">Formats acceptés : .xlsx, .xls, .csv</span></div><div class="import-links"><a href="modele_import_ifs.xlsx" download>Télécharger le modèle Excel</a><a href="sample_projects.csv" download>Télécharger le modèle CSV</a></div><div class="validation" id="validation"><p class="note">Feuille Excel recommandée : <strong>PROJETS</strong>. Répétez l'ID du projet pour chaque Admin 2 couvert. Colonnes attendues : id, title, country, region, admin2, org, theme, odd, status, start, end, beneficiaries, partner, funder, budget, summary.</p></div>`);
   setTimeout(()=>{
     const dz=$('dropzone');
     dz.onclick=()=>$('dataInput').click();
@@ -294,25 +294,17 @@ function importModal(){
   },0);
 }
 function showValidation(file,res){
-  let html=`<h4>Contrôle de ${file.name}</h4><p class="${res.errors.length?'err':'ok'}">${res.errors.length?`⛔ ${res.errors.length} erreur(s) bloquante(s)`:`✓ ${res.rows.length} ligne(s) valides`}</p>`;
+  let html=`<h4>Contrôle de ${file.name}</h4><p class="${res.errors.length?'err':'ok'}">${res.errors.length?`⛔ ${res.errors.length} erreur(s) bloquante(s)`:`✓ ${res.rows.length} ligne(s) territoriale(s) valide(s)`}</p>`;
   if(res.errors.length)html+=`<ul class="err">${res.errors.slice(0,15).map(x=>`<li>${x}</li>`).join('')}</ul>`;
   if(res.warnings.length)html+=`<p class="warn">⚠ ${res.warnings.length} avertissement(s)</p><ul class="warn">${res.warnings.slice(0,10).map(x=>`<li>${x}</li>`).join('')}</ul>`;
   if(!res.errors.length){
-    html+=`<button id="applyImport" class="primary">Importer ${res.rows.length} projets</button><div class="table-wrap"><table><tr>${res.headers.slice(0,8).map(h=>`<th>${h}</th>`).join('')}</tr>${res.rows.slice(0,5).map(r=>`<tr>${res.headers.slice(0,8).map(h=>`<td>${r[h]}</td>`).join('')}</tr>`).join('')}</table></div>`;
+    html+=`<button id="applyImport" class="primary">Importer ${res.rows.length} lignes territoriales</button><div class="table-wrap"><table><tr>${res.headers.slice(0,8).map(h=>`<th>${h}</th>`).join('')}</tr>${res.rows.slice(0,5).map(r=>`<tr>${res.headers.slice(0,8).map(h=>`<td>${r[h]}</td>`).join('')}</tr>`).join('')}</table></div>`;
   }
   $('validation').innerHTML=html;
   if(!res.errors.length)setTimeout(()=>{$('applyImport').onclick=()=>{
     projects=res.rows.map(r=>({...r,start:+r.start,end:+r.end,beneficiaries:+String(r.beneficiaries).replace(/\s/g,''),budget:+String(r.budget).replace(/\s/g,'').replace(',','.')}));
-    initFilters();update(false);
-// Enrichissement V13 : remplacement des rectangles guinéens par de vraies limites ADM2 GeoBoundaries si le réseau l'autorise.
-const GUINEA_ADM2_URL='https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/GIN/ADM2/geoBoundaries-GIN-ADM2_simplified.geojson';
-fetch(GUINEA_ADM2_URL).then(r=>{if(!r.ok)throw new Error('GeoBoundaries');return r.json()}).then(g=>{
- const wanted=new Set(['Mali','Koubia','Tougue','Tougué','Siguiri','Labe','Labé','Mamou','Dabola','Dinguiraye']);
- const norm=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
- const canon={mali:'Mali',koubia:'Koubia',tougue:'Tougué',siguiri:'Siguiri',labe:'Labé',mamou:'Mamou',dabola:'Dabola',dinguiraye:'Dinguiraye'};
- const real=g.features.filter(f=>canon[norm(f.properties.shapeName||f.properties.name)]).map((f,i)=>{const name=canon[norm(f.properties.shapeName||f.properties.name)];return {...f,properties:{...f.properties,country:'Guinée',region:guineaRegion(name),name,id:'gin-real-'+i,population:0,realBoundary:true}}});
- if(real.length>=7){admin2Geo={type:'FeatureCollection',features:[...admin2Geo.features.filter(f=>f.properties.country!=='Guinée'),...real]};update(false,false);console.info('IFS V13 : limites ADM2 réelles de Guinée chargées (GeoBoundaries).')}
-}).catch(()=>console.info('IFS V13 : GeoBoundaries indisponible, géométrie de secours utilisée.'));$('modal').classList.add('hidden');alert('Import réussi : la carte et les indicateurs ont été recalculés.');
+    initFilters();update(false);loadGuineaRealBoundaries().then(()=>update(false,false));
+$('modal').classList.add('hidden');alert('Import réussi : la carte et les indicateurs ont été recalculés.');
   }},0);
 }
 function processImportFile(file){
@@ -418,5 +410,31 @@ analysisFilterIds.forEach(id=>$(id).addEventListener('change',()=>{
 }));
 ['metric','toggleHistoric','togglePopulation','toggleHydro','toggleBasin'].forEach(id=>$(id).addEventListener('change',()=>update(false,false)));
 
+// V14 : référentiel administratif. Les projets ne transportent aucune géométrie :
+// le CSV/Excel ne contient que des relations projet x Admin2. Les limites sont chargées depuis le référentiel GeoBoundaries.
+async function loadGuineaRealBoundaries(){
+  const url='https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/GIN/ADM2/geoBoundaries-GIN-ADM2_simplified.geojson';
+  const norm=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const canon={mali:'Mali',koubia:'Koubia',tougue:'Tougué',siguiri:'Siguiri',labe:'Labé',mamou:'Mamou',dabola:'Dabola',dinguiraye:'Dinguiraye'};
+  try{
+    const r=await fetch(url,{cache:'force-cache'}); if(!r.ok)throw new Error('HTTP '+r.status);
+    const g=await r.json();
+    const real=g.features.filter(f=>canon[norm(f.properties.shapeName||f.properties.name)]).map((f,i)=>{
+      const name=canon[norm(f.properties.shapeName||f.properties.name)];
+      return {...f,properties:{...f.properties,country:'Guinée',region:guineaRegion(name),name,id:'gin-real-'+i,population:0,realBoundary:true}};
+    });
+    if(real.length<8)throw new Error('Préfectures attendues non retrouvées');
+    admin2Geo={type:'FeatureCollection',features:[...admin2Geo.features.filter(f=>f.properties.country!=='Guinée'),...real]};
+    console.info('IFS V14 : 8 limites ADM2 réelles de Guinée chargées.');
+    return true;
+  }catch(e){
+    // Ne pas afficher les rectangles fictifs comme s'ils étaient réels.
+    admin2Geo={type:'FeatureCollection',features:admin2Geo.features.filter(f=>f.properties.country!=='Guinée')};
+    showNetwork('Référentiel ADM2 Guinée indisponible · données projets visibles, géométries masquées.','warn',9000);
+    console.warn('IFS V14 : limites Guinée indisponibles',e);
+    return false;
+  }
+}
+
 if(new URLSearchParams(location.search).get('embed')==='1'){document.body.classList.add('embed');document.querySelector('.topbar').style.display='none';document.querySelector('.layout').style.height='100vh'}
-initFilters();update(false);
+initFilters();update(false);loadGuineaRealBoundaries().then(()=>update(false,false));

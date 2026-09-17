@@ -63,3 +63,11 @@ V13 — TEST DONNEES REELLES GUINEE
 - Limites ADM2 de Guinee chargees dynamiquement depuis GeoBoundaries (source WFP/OCHA, licence CC BY 3.0 IGO). Si indisponible : geometries de secours.
 - Les projets des autres pays restent fictifs et servent uniquement a tester le demonstrateur.
 - Source IFS : https://www.groupe-initiatives.org/IMG/pdf/cartographies_des_projets_en_cours_dans_le_hbfs-v4.pdf
+
+V14 — REFERENTIEL ADMINISTRATIF + IMPORT PROJET x ADMIN2
+- Correction majeure V13 : le chargement des limites ADM2 réelles de Guinée est maintenant exécuté au démarrage (il était placé par erreur dans le flux d'import).
+- Les limites sont chargées depuis geoBoundaries gbOpen GIN ADM2 (source WFP/OCHA, année représentée 2017).
+- Si le référentiel distant est indisponible, les rectangles fictifs de Guinée sont masqués plutôt que présentés comme des limites réelles.
+- Modèle d'import clarifié : aucune géométrie dans Excel/CSV ; une ligne = un projet x une unité Admin2.
+- Un même ID projet peut être répété sur plusieurs Admin2 ; l'application reconstitue une fiche projet unique et sa couverture multi-territoires.
+- Le modèle Excel et le CSV d'exemple illustrent ce mécanisme.

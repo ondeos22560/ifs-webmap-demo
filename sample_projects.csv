@@ -1,6 +1,4 @@
-id;title;country;region;admin2;org;theme;odd;status;start;end;beneficiaries;partner;funder;budget;summary
-P001;Renforcement des filières locales — Dagana;Sénégal;Saint-Louis;Dagana;GERES;Agriculture & alimentation;ODD 2;En cours;2024;2026;5200;Collectivité locale;Fondation de France;185000;Projet exemple pour tester l'import CSV.
-P002;Résilience des territoires riverains — Kanel;Sénégal;Matam;Kanel;AVSF;Prévention / risques naturels;ODD 13;En cours;2023;2026;7680;OMVS;AFD;260000;Projet exemple sur la résilience et la prévention des risques.
-P003;Accès durable aux services essentiels — Kaédi;Mauritanie;Gorgol;Kaédi;GRDR;Eau & assainissement;ODD 6;Terminé;2021;2024;4300;Service technique national;Union européenne;140000;Projet exemple sur l'accès à l'eau.
-P004;Développement économique inclusif — Kayes;Mali;Kayes;Kayes;GRET;Développement économique;ODD 8;En cours;2022;2026;8200;Chambre consulaire;Coopération suisse;310000;Projet exemple sur le développement économique local.
-P005;Appui aux dynamiques communautaires — Labé;Guinée;Labé;Labé;Le Partenariat;Cohésion sociale;ODD 16;En cours;2024;2026;3500;Association locale;Fondation de France;98000;Projet exemple sur la cohésion sociale et la gouvernance locale.
+id,title,country,region,admin2,org,theme,odd,status,start,end,beneficiaries,partner,funder,budget,summary
+DEMO-001,Projet exemple multi-territoires,Guinée,Labé,Mali,Organisation exemple,Gestion des ressources naturelles,ODD 15,En cours,2024,2026,1200,Partenaire exemple,Bailleur exemple,150000,Exemple : même projet répété pour chaque Admin 2 couvert.
+DEMO-001,Projet exemple multi-territoires,Guinée,Labé,Koubia,Organisation exemple,Gestion des ressources naturelles,ODD 15,En cours,2024,2026,1200,Partenaire exemple,Bailleur exemple,150000,Exemple : même projet répété pour chaque Admin 2 couvert.
+DEMO-001,Projet exemple multi-territoires,Guinée,Labé,Tougué,Organisation exemple,Gestion des ressources naturelles,ODD 15,En cours,2024,2026,1200,Partenaire exemple,Bailleur exemple,150000,Exemple : même projet répété pour chaque Admin 2 couvert.
