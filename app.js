@@ -34,12 +34,12 @@ const historical=admin2Geo.features.filter((_,i)=>i%2===0).map((f,i)=>({feature:
 const map=L.map('map',{zoomControl:false}).setView([14.7,-12.7],5);
 L.control.zoom({position:'bottomright'}).addTo(map);
 const street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
-const light=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:20,attribution:'© OpenStreetMap © CARTO'});
-const voyager=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:20,attribution:'© OpenStreetMap © CARTO'});
+const osmFrance=L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',{maxZoom:20,attribution:'© OpenStreetMap France · © OpenStreetMap'});
 const hot=L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',{maxZoom:20,attribution:'© OpenStreetMap · HOT'});
-const topo=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenTopoMap'});
+const cycle=L.tileLayer('https://{s}.tile.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',{maxZoom:20,attribution:'© CyclOSM · © OpenStreetMap'});
+const topo=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenTopoMap · © OpenStreetMap'});
 const satellite=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'});
-L.control.layers({"Plan OSM":street,"Clair":light,"Voyager":voyager,"Humanitaire":hot,"Relief":topo,"Satellite":satellite},null,{position:'topright',collapsed:false}).addTo(map);
+L.control.layers({"Plan OSM":street,"OSM France":osmFrance,"Humanitaire":hot,"CyclOSM":cycle,"Relief":topo,"Satellite":satellite},null,{position:'topright',collapsed:false}).addTo(map);
 map.createPane('countryHalo');map.getPane('countryHalo').style.zIndex=445;map.getPane('countryHalo').style.pointerEvents='none';
 map.createPane('countryLines');map.getPane('countryLines').style.zIndex=446;map.getPane('countryLines').style.pointerEvents='none';
 let geoLayer=L.geoJSON(admin2Geo).addTo(map), histLayer=L.layerGroup();
@@ -60,7 +60,11 @@ function filtered(){let ys=+$('yearStart').value,ye=+$('yearEnd').value;return p
 function statsFor(name){let a=current.filter(p=>p.admin2===name);return {projects:a.length,beneficiaries:a.reduce((s,p)=>s+p.beneficiaries,0),organizations:new Set(a.map(p=>p.organization)).size,partners:new Set(a.map(p=>p.partner)).size,funders:new Set(a.map(p=>p.funder)).size}}
 function metricValue(s){return s[$('metricSelect').value]||0}
 function color(v,max){let t=max?Math.min(1,v/max):0; if(t===0)return '#eef2ef'; if(t<.25)return '#cfe0d3'; if(t<.5)return '#9fc2aa'; if(t<.75)return '#65967a'; return '#2c6e5a'}
-function renderMap(){let vals=admin2Geo.features.map(f=>metricValue(statsFor(f.properties.name))),max=Math.max(0,...vals);geoLayer.clearLayers();geoLayer=L.geoJSON(admin2Geo,{style:f=>{let s=statsFor(f.properties.name),v=metricValue(s);return {color:'#f8fbf9',weight:1.2,fillColor:color(v,max),fillOpacity:.82}},onEachFeature:(f,l)=>{let s=statsFor(f.properties.name);l.bindTooltip(`${f.properties.name} · ${s.projects} projet${s.projects>1?'s':''}`,{sticky:true});l.on('click',()=>{let html=`<div class="popup-title">${f.properties.name}</div><div style="font-size:9px;color:#71817c">${f.properties.region} · ${f.properties.country}</div><div class="popup-stats"><div class="popup-stat"><strong>${s.projects}</strong>Projets</div><div class="popup-stat"><strong>${fmt(s.beneficiaries)}</strong>Bénéficiaires</div><div class="popup-stat"><strong>${s.organizations}</strong>Intervenants</div><div class="popup-stat"><strong>${s.partners}</strong>Partenaires</div></div><span class="popup-link" onclick="focusAdmin2('${f.properties.name.replaceAll("'","\\'")}')">Filtrer sur cette unité →</span>`;l.bindPopup(html).openPopup()})}}).addTo(map);$('legendMax').textContent=fmt(max);$('legendMin').textContent='0';$('legendMetric').textContent=$('metricSelect').selectedOptions[0].textContent;}
+function terrainLinks(lat,lng){
+  const ll=`${Number(lat).toFixed(6)},${Number(lng).toFixed(6)}`;
+  return `<div class="terrain-links"><a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${ll}" target="_blank" rel="noopener">◉ Vue terrain</a><a href="https://www.google.com/maps/search/?api=1&query=${ll}" target="_blank" rel="noopener">↗ Google Maps</a></div>`;
+}
+function renderMap(){let vals=admin2Geo.features.map(f=>metricValue(statsFor(f.properties.name))),max=Math.max(0,...vals);geoLayer.clearLayers();geoLayer=L.geoJSON(admin2Geo,{style:f=>{let s=statsFor(f.properties.name),v=metricValue(s);return {color:'#f8fbf9',weight:1.2,fillColor:color(v,max),fillOpacity:.82,bubblingMouseEvents:false}},onEachFeature:(f,l)=>{let s=statsFor(f.properties.name);l.bindTooltip(`${f.properties.name} · ${s.projects} projet${s.projects>1?'s':''}`,{sticky:true});l.on('click',e=>{if(e.originalEvent)L.DomEvent.stopPropagation(e.originalEvent);let c=l.getBounds().getCenter();let html=`<div class="popup-title">${f.properties.name}</div><div style="font-size:9px;color:#71817c">${f.properties.region} · ${f.properties.country}</div><div class="popup-stats"><div class="popup-stat"><strong>${s.projects}</strong>Projets</div><div class="popup-stat"><strong>${fmt(s.beneficiaries)}</strong>Bénéficiaires</div><div class="popup-stat"><strong>${s.organizations}</strong>Intervenants</div><div class="popup-stat"><strong>${s.partners}</strong>Partenaires</div></div><span class="popup-link" onclick="focusAdmin2('${f.properties.name.replaceAll("'","\\'")}')">Filtrer sur cette unité →</span>${terrainLinks(c.lat,c.lng)}`;l.bindPopup(html,{maxWidth:280}).openPopup()})}}).addTo(map);$('legendMax').textContent=fmt(max);$('legendMin').textContent='0';$('legendMetric').textContent=$('metricSelect').selectedOptions[0].textContent;}
 window.focusAdmin2=name=>{ $('admin2Filter').value=name; apply(true);map.closePopup();}
 function renderHistorical(){histLayer.clearLayers();if(!$('historicalToggle').checked){if(map.hasLayer(histLayer))map.removeLayer(histLayer);return}historical.forEach(h=>{let c=L.geoJSON(h.feature).getBounds().getCenter();L.circleMarker(c,{radius:5+Math.sqrt(h.count)*1.6,color:'#7c5b8e',weight:1,fillColor:'#a77cba',fillOpacity:.65}).bindTooltip(`Historique 2010–2020 : ${h.count} projets`).addTo(histLayer)});histLayer.addTo(map)}
 function fmt(n){return Number(n||0).toLocaleString('fr-FR')}
@@ -69,15 +73,19 @@ function renderThemes(){let counts=THEMES.map(t=>[t,current.filter(p=>p.themes.i
 function renderYears(){let years=[2021,2022,2023,2024,2025,2026], vals=years.map(y=>current.filter(p=>p.start<=y&&p.end>=y).length),max=Math.max(1,...vals);$('yearChart').innerHTML=years.map((y,i)=>`<div class="spark-col"><div title="${vals[i]} projets actifs" class="spark-bar" style="height:${Math.max(4,vals[i]/max*58)}px"></div><span>${String(y).slice(2)}</span></div>`).join('')}
 function renderList(){let arr=[...current].sort((a,b)=>sortDesc?b.start-a.start:a.start-b.start);$('projectList').innerHTML=arr.slice(0,28).map(p=>`<article class="project-item" data-id="${p.id}"><span class="tag">${p.organization}</span> <span class="tag ${p.status==='Terminé'?'done':'status'}">${p.status}</span><h4>${p.title}</h4><div class="project-meta"><span>${p.admin2} · ${p.country}</span><span>${p.start}–${p.end}</span></div></article>`).join('')||'<p class="small-note">Aucun projet ne correspond aux filtres.</p>';document.querySelectorAll('.project-item').forEach(el=>el.onclick=()=>openProject(+el.dataset.id))}
 function activeDataFilter(){return ['countryFilter','regionFilter','admin2Filter','orgFilter','statusFilter','themeFilter','funderFilter','partnerFilter'].some(id=>$(id).value)||+$('yearStart').value!==2021||+$('yearEnd').value!==2026}
+function smartZoom(bounds,maxZoom){
+  if(!bounds||!bounds.isValid())return;
+  map.flyToBounds(bounds,{padding:[46,46],maxZoom,duration:.75,easeLinearity:.25});
+}
 function zoomToSelection(){
   const c=$('countryFilter').value,r=$('regionFilter').value,a=$('admin2Filter').value;
   let features=[];
-  if(a) features=admin2Geo.features.filter(f=>f.properties.name===a);
+  if(a) features=admin2Geo.features.filter(f=>f.properties.name===a&&(!c||f.properties.country===c));
   else if(r) features=admin2Geo.features.filter(f=>f.properties.region===r&&(!c||f.properties.country===c));
-  else if(c){let cf=countryGeo.features.find(f=>f.properties.name===c);if(cf){map.fitBounds(L.geoJSON(cf).getBounds(),{padding:[35,35],maxZoom:6});$('mapScope').textContent=c;return}}
-  else if(activeDataFilter()){let names=new Set(current.map(p=>p.admin2));features=admin2Geo.features.filter(f=>names.has(f.properties.name))}
-  if(features.length){map.fitBounds(L.geoJSON({type:'FeatureCollection',features}).getBounds(),{padding:[40,40],maxZoom:a?8:7});$('mapScope').textContent=a?`${a} · ${r}`:r||`${current.length} projets visibles`}
-  else if(!activeDataFilter()){$('mapScope').textContent='Bassin du Fleuve Sénégal · 4 pays'}
+  else if(c){let cf=countryGeo.features.find(f=>f.properties.name===c);if(cf){smartZoom(L.geoJSON(cf).getBounds(),6.4);$('mapScope').textContent=c;return}}
+  else if(activeDataFilter()){let keys=new Set(current.map(p=>`${p.country}|${p.admin2}`));features=admin2Geo.features.filter(f=>keys.has(`${f.properties.country}|${f.properties.name}`))}
+  if(features.length){smartZoom(L.geoJSON({type:'FeatureCollection',features}).getBounds(),a?9:r?7.8:7);$('mapScope').textContent=a?`${a} · ${r}`:r||`${current.length} projets visibles`}
+  else if(!activeDataFilter()){smartZoom(L.geoJSON(countryGeo).getBounds(),5.3);$('mapScope').textContent='Bassin du Fleuve Sénégal · 4 pays'}
 }
 function apply(autoZoom=false){syncGeoFilters();current=filtered();renderKpis();renderThemes();renderYears();renderList();renderMap();renderHistorical();if(autoZoom)zoomToSelection();}
 ids.forEach(id=>$(id).addEventListener('change',()=>apply(id!=='metricSelect')));$('historicalToggle').addEventListener('change',renderHistorical);
@@ -88,6 +96,11 @@ function openModal(){$('aboutModal').classList.add('open');$('modalBackdrop').cl
 $('btnReset').onclick=()=>{['countryFilter','regionFilter','admin2Filter','orgFilter','statusFilter','themeFilter','funderFilter','partnerFilter'].forEach(id=>$(id).value='');$('yearStart').value=2021;$('yearEnd').value=2026;$('metricSelect').value='projects';$('historicalToggle').checked=false;map.setView([14.7,-12.7],5);$('mapScope').textContent='Bassin du Fleuve Sénégal · 4 pays';apply();toast('Filtres réinitialisés')};
 $('btnFilters').onclick=()=>$('.left-panel')?.classList.toggle('open');
 function toast(msg){let t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+function openTerrainPopup(latlng){
+  const html=`<div class="popup-title">Point sur la carte</div><div class="terrain-coords">${latlng.lat.toFixed(5)} · ${latlng.lng.toFixed(5)}</div><p class="terrain-note">Ouvrir une vue au sol si Google dispose d'une couverture à cet endroit.</p>${terrainLinks(latlng.lat,latlng.lng)}`;
+  L.popup({maxWidth:270}).setLatLng(latlng).setContent(html).openOn(map);
+}
+map.on('click',e=>openTerrainPopup(e.latlng));
 let stagedImport=[];
 function openImport(){ $('importModal').classList.add('open');$('importBackdrop').classList.add('open') }
 function closeImport(){ $('importModal').classList.remove('open');$('importBackdrop').classList.remove('open') }

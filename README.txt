@@ -23,3 +23,11 @@ IMPORTANT
 
 Publication GitHub Pages
 Remplacer dans le dépôt les fichiers index.html, app.js, style.css, sample_projects.csv et README.txt. La même URL GitHub Pages sera ensuite redéployée automatiquement.
+
+
+V3
+--
+- Fonds sans clé API : Plan OSM, OSM France, Humanitaire, CyclOSM, Relief, Satellite.
+- Clic sur la carte : liens Vue terrain (Google Street View si disponible) et Google Maps.
+- Même accès Vue terrain depuis les popups Admin 2.
+- Zoom géographique plus fluide et plus marqué lors des sélections Pays / Région / Admin 2.
