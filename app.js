@@ -484,8 +484,8 @@ async function loadAllRealBoundaries(){
         const name=String(raw).trim();
         adm2Features.push({...f,properties:{...f.properties,country,region:knownRegion(country,name),name,id:`${cfg.iso}-adm2-${i}`,population:0,realBoundary:true}});
       });
-      console.info(`IFS V19 : ${country} chargé (${g2.features.length} unités ADM2).`);
-    }catch(e){failures.push(country);console.warn(`IFS V19 : référentiel ${country} indisponible`,e)}
+      console.info(`IFS V21 : ${country} chargé (${g2.features.length} unités ADM2).`);
+    }catch(e){failures.push(country);console.warn(`IFS V21 : référentiel ${country} indisponible`,e)}
   }
   if(adm0Features.length){countryGeo={type:'FeatureCollection',features:adm0Features};rebuildCountryLayers()}
   // On ne conserve aucun rectangle fictif pour les pays dont le vrai référentiel a été chargé.

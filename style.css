@@ -92,3 +92,11 @@ body.dark .compact-popup .muted{color:#b8c8c0}
 
 /* V13 — provenance des données réelles */
 .real-tag{background:#e6f5ee!important;color:#0a684d!important;border:1px solid #7cc7aa!important;font-weight:800}.real-source{border:1px solid #8bcdb3;background:#f0faf6;padding:10px;border-radius:10px}.real-source h4{color:#0a684d;margin-top:0}.real-source a{color:#08694e;font-weight:800}
+
+/* V21 — commandes de panneaux accessibles, sans chevauchement avec la carte */
+.panel-collapse{top:10px!important;transform:none!important;width:34px!important;height:34px!important;border-radius:10px!important;font-size:24px!important;z-index:900!important}
+.panel-collapse-left{right:10px!important}.panel-collapse-right{left:10px!important}
+.left .panel-head{padding-right:42px}.right .right-view{padding-top:38px}
+.layout.left-collapsed .panel-collapse-left{right:4px!important;top:10px!important;transform:rotate(180deg)!important}
+.layout.right-collapsed .panel-collapse-right{left:4px!important;top:10px!important;transform:rotate(180deg)!important}
+@media(max-width:1280px){.right.summary-open .panel-collapse-right{display:block!important;left:10px!important;top:10px!important}.right.summary-open .right-view{padding-top:38px}}
