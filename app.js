@@ -413,25 +413,38 @@ analysisFilterIds.forEach(id=>$(id).addEventListener('change',()=>{
 // V14 : référentiel administratif. Les projets ne transportent aucune géométrie :
 // le CSV/Excel ne contient que des relations projet x Admin2. Les limites sont chargées depuis le référentiel GeoBoundaries.
 async function loadGuineaRealBoundaries(){
-  const url='https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/GIN/ADM2/geoBoundaries-GIN-ADM2_simplified.geojson';
+  const urls=[
+    'data/guinea_adm2.geojson',
+    'https://raw.githubusercontent.com/wmgeolab/geoBoundaries/0f0b6f5fb638e7faf115f876da4e77d8f7fa319f/releaseData/gbOpen/GIN/ADM2/geoBoundaries-GIN-ADM2_simplified.geojson'
+  ];
   const norm=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   const canon={mali:'Mali',koubia:'Koubia',tougue:'Tougué',siguiri:'Siguiri',labe:'Labé',mamou:'Mamou',dabola:'Dabola',dinguiraye:'Dinguiraye'};
   try{
-    const r=await fetch(url,{cache:'force-cache'}); if(!r.ok)throw new Error('HTTP '+r.status);
-    const g=await r.json();
+    let g=null,lastErr=null;
+    for(const url of urls){
+      try{
+        const r=await fetch(url,{cache:'no-cache'}); if(!r.ok)throw new Error('HTTP '+r.status);
+        const txt=await r.text();
+        if(txt.trim().startsWith('version https://git-lfs'))throw new Error('Git LFS pointer');
+        g=JSON.parse(txt);
+        if(!g || !Array.isArray(g.features))throw new Error('GeoJSON invalide');
+        break;
+      }catch(err){lastErr=err;}
+    }
+    if(!g)throw lastErr||new Error('Aucune source ADM2 disponible');
     const real=g.features.filter(f=>canon[norm(f.properties.shapeName||f.properties.name)]).map((f,i)=>{
       const name=canon[norm(f.properties.shapeName||f.properties.name)];
       return {...f,properties:{...f.properties,country:'Guinée',region:guineaRegion(name),name,id:'gin-real-'+i,population:0,realBoundary:true}};
     });
     if(real.length<8)throw new Error('Préfectures attendues non retrouvées');
     admin2Geo={type:'FeatureCollection',features:[...admin2Geo.features.filter(f=>f.properties.country!=='Guinée'),...real]};
-    console.info('IFS V14 : 8 limites ADM2 réelles de Guinée chargées.');
+    console.info('IFS V15 : 8 limites ADM2 réelles de Guinée chargées.');
     return true;
   }catch(e){
     // Ne pas afficher les rectangles fictifs comme s'ils étaient réels.
     admin2Geo={type:'FeatureCollection',features:admin2Geo.features.filter(f=>f.properties.country!=='Guinée')};
     showNetwork('Référentiel ADM2 Guinée indisponible · données projets visibles, géométries masquées.','warn',9000);
-    console.warn('IFS V14 : limites Guinée indisponibles',e);
+    console.warn('IFS V15 : limites Guinée indisponibles',e);
     return false;
   }
 }

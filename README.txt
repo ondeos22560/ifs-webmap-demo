@@ -71,3 +71,6 @@ V14 — REFERENTIEL ADMINISTRATIF + IMPORT PROJET x ADMIN2
 - Modèle d'import clarifié : aucune géométrie dans Excel/CSV ; une ligne = un projet x une unité Admin2.
 - Un même ID projet peut être répété sur plusieurs Admin2 ; l'application reconstitue une fiche projet unique et sa couverture multi-territoires.
 - Le modèle Excel et le CSV d'exemple illustrent ce mécanisme.
+
+
+V15 : correction du chargement ADM2 Guinée. L ancien lien GitHub renvoyait un pointeur Git LFS au lieu du GeoJSON. La V15 utilise une révision GeoBoundaries servie comme GeoJSON réel et détecte explicitement les pointeurs LFS.
