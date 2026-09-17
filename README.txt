@@ -1,3 +1,14 @@
+V18 — RÉFÉRENTIEL ADMINISTRATIF COHÉRENT 4 PAYS
+
+- Sénégal, Mali, Mauritanie, Guinée : ADM0 et ADM2 issus de la même version geoBoundaries (gbOpen).
+- Suppression des anciennes limites Natural Earth pour les pays dont le référentiel est chargé.
+- Les ADM2 de la zone de démonstration remplacent les rectangles fictifs.
+- Vocabulaire : Département (Sénégal), Cercle (Mali), Moughataa (Mauritanie), Préfecture (Guinée).
+- Conservation des fonctions V17 : filtres, fiches, clic carte, double-clic, animation et périmètres multi-ADM2.
+- Les projets hors Guinée restent fictifs dans ce démonstrateur. Les 4 projets Guinée signalés SOURCE IFS sont issus du document public IFS 2024.
+
+ATTENTION : les GeoJSON administratifs simplifiés sont chargés depuis le dépôt geoBoundaries au démarrage. En production, ils devront être copiés localement sur l'hébergement afin de supprimer cette dépendance réseau.
+
 V17 - PERIMETRES PROJETS
 
 - Clic sur un projet : surbrillance de toutes les prefectures couvertes.

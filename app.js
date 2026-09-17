@@ -325,7 +325,7 @@ function showValidation(file,res){
   $('validation').innerHTML=html;
   if(!res.errors.length)setTimeout(()=>{$('applyImport').onclick=()=>{
     projects=res.rows.map(r=>({...r,start:+r.start,end:+r.end,beneficiaries:+String(r.beneficiaries).replace(/\s/g,''),budget:+String(r.budget).replace(/\s/g,'').replace(',','.')}));
-    initFilters();update(false);loadGuineaRealBoundaries().then(()=>update(false,false));
+    initFilters();update(false,true);
 $('modal').classList.add('hidden');alert('Import réussi : la carte et les indicateurs ont été recalculés.');
   }},0);
 }
@@ -432,44 +432,60 @@ analysisFilterIds.forEach(id=>$(id).addEventListener('change',()=>{
 }));
 ['metric','toggleHistoric','togglePopulation','toggleHydro','toggleBasin'].forEach(id=>$(id).addEventListener('change',()=>update(false,false)));
 
-// V14 : référentiel administratif. Les projets ne transportent aucune géométrie :
-// le CSV/Excel ne contient que des relations projet x Admin2. Les limites sont chargées depuis le référentiel GeoBoundaries.
-async function loadGuineaRealBoundaries(){
-  const urls=[
-    'data/guinea_adm2.geojson',
-    'https://raw.githubusercontent.com/wmgeolab/geoBoundaries/0f0b6f5fb638e7faf115f876da4e77d8f7fa319f/releaseData/gbOpen/GIN/ADM2/geoBoundaries-GIN-ADM2_simplified.geojson'
-  ];
-  const norm=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-  const canon={mali:'Mali',koubia:'Koubia',tougue:'Tougué',siguiri:'Siguiri',labe:'Labé',mamou:'Mamou',dabola:'Dabola',dinguiraye:'Dinguiraye'};
-  try{
-    let g=null,lastErr=null;
-    for(const url of urls){
-      try{
-        const r=await fetch(url,{cache:'no-cache'}); if(!r.ok)throw new Error('HTTP '+r.status);
-        const txt=await r.text();
-        if(txt.trim().startsWith('version https://git-lfs'))throw new Error('Git LFS pointer');
-        g=JSON.parse(txt);
-        if(!g || !Array.isArray(g.features))throw new Error('GeoJSON invalide');
-        break;
-      }catch(err){lastErr=err;}
-    }
-    if(!g)throw lastErr||new Error('Aucune source ADM2 disponible');
-    const real=g.features.filter(f=>canon[norm(f.properties.shapeName||f.properties.name)]).map((f,i)=>{
-      const name=canon[norm(f.properties.shapeName||f.properties.name)];
-      return {...f,properties:{...f.properties,country:'Guinée',region:guineaRegion(name),name,id:'gin-real-'+i,population:0,realBoundary:true}};
-    });
-    if(real.length<8)throw new Error('Préfectures attendues non retrouvées');
-    admin2Geo={type:'FeatureCollection',features:[...admin2Geo.features.filter(f=>f.properties.country!=='Guinée'),...real]};
-    console.info('IFS V15 : 8 limites ADM2 réelles de Guinée chargées.');
-    return true;
-  }catch(e){
-    // Ne pas afficher les rectangles fictifs comme s'ils étaient réels.
-    admin2Geo={type:'FeatureCollection',features:admin2Geo.features.filter(f=>f.properties.country!=='Guinée')};
-    showNetwork('Référentiel ADM2 Guinée indisponible · données projets visibles, géométries masquées.','warn',9000);
-    console.warn('IFS V15 : limites Guinée indisponibles',e);
-    return false;
+// V18 : référentiel administratif cohérent pour les 4 pays.
+// Principe : pour chaque pays, ADM0 et ADM2 proviennent de la MEME version geoBoundaries.
+// Les projets restent purement attributaires (CSV/Excel) et sont joints aux ADM2 par leur nom.
+const GEOBOUNDARIES_COMMIT='9469f09';
+const ADMIN_COUNTRIES={
+  'Sénégal':{iso:'SEN',admin1Label:'Région',admin2Label:'Département'},
+  'Mali':{iso:'MLI',admin1Label:'Région',admin2Label:'Cercle'},
+  'Mauritanie':{iso:'MRT',admin1Label:'Wilaya',admin2Label:'Moughataa'},
+  'Guinée':{iso:'GIN',admin1Label:'Région',admin2Label:'Préfecture'}
+};
+const targetAdmin2=new Map(adminDefs.map((d,i)=>[`${d[0]}|${normName(d[2])}`,{country:d[0],region:d[1],name:d[2],population:35000+((i*37991)%260000)}]));
+function normName(x){return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’']/g,'').replace(/[-_]/g,' ').replace(/\s+/g,' ').trim().toLowerCase()}
+function gbUrl(iso,level){return `https://raw.githubusercontent.com/wmgeolab/geoBoundaries/${GEOBOUNDARIES_COMMIT}/releaseData/gbOpen/${iso}/${level}/geoBoundaries-${iso}-${level}_simplified.geojson`}
+async function fetchGeoJSON(url){
+  const r=await fetch(url,{cache:'no-cache'}); if(!r.ok)throw new Error(`HTTP ${r.status}`);
+  const txt=await r.text(); if(txt.trim().startsWith('version https://git-lfs'))throw new Error('Git LFS pointer');
+  const g=JSON.parse(txt); if(!g||!Array.isArray(g.features))throw new Error('GeoJSON invalide'); return g;
+}
+function featureName(f){return f?.properties?.shapeName||f?.properties?.name||f?.properties?.NAME_2||f?.properties?.NAME_1||''}
+async function loadCountryReference(country,cfg){
+  const [adm0,adm2]=await Promise.all([fetchGeoJSON(gbUrl(cfg.iso,'ADM0')),fetchGeoJSON(gbUrl(cfg.iso,'ADM2'))]);
+  const c0=adm0.features.map((f,i)=>({...f,properties:{...f.properties,name:country,country,iso_a3:cfg.iso,realBoundary:true,id:`${cfg.iso}-adm0-${i}`}}));
+  const selected=[];
+  for(const f of adm2.features){
+    const key=`${country}|${normName(featureName(f))}`; const meta=targetAdmin2.get(key); if(!meta)continue;
+    selected.push({...f,properties:{...f.properties,country,region:meta.region,name:meta.name,population:meta.population,realBoundary:true,admin2Label:cfg.admin2Label,admin1Label:cfg.admin1Label,id:`${cfg.iso}-adm2-${selected.length}`}})
   }
+  const expected=adminDefs.filter(d=>d[0]===country).length;
+  if(selected.length!==expected)console.warn(`IFS V18 ${country}: ${selected.length}/${expected} Admin2 trouvés`,selected.map(f=>f.properties.name));
+  return {country,adm0:c0,adm2:selected,expected};
+}
+async function loadAllRealBoundaries(){
+  const loaded=[]; const failed=[];
+  for(const [country,cfg] of Object.entries(ADMIN_COUNTRIES)){
+    try{loaded.push(await loadCountryReference(country,cfg))}catch(e){failed.push(country);console.warn(`IFS V18 : référentiel ${country} indisponible`,e)}
+  }
+  if(loaded.length){
+    const okCountries=new Set(loaded.map(x=>x.country));
+    // Remplacement des rectangles fictifs uniquement pour les pays chargés.
+    const keep=admin2Geo.features.filter(f=>!okCountries.has(f.properties.country));
+    admin2Geo={type:'FeatureCollection',features:[...keep,...loaded.flatMap(x=>x.adm2)]};
+    // Remplacement des frontières Natural Earth par les ADM0 de la même famille geoBoundaries.
+    const oldCountries=countryGeo.features.filter(f=>!okCountries.has(f.properties.name));
+    const coherentCountries={type:'FeatureCollection',features:[...oldCountries,...loaded.flatMap(x=>x.adm0)]};
+    countryHalo.clearLayers(); countryHalo.addData(coherentCountries);
+    countryLayer.clearLayers(); countryLayer.addData(coherentCountries);
+  }
+  const missingTargets=[];
+  for(const d of adminDefs){if(!admin2Geo.features.some(f=>f.properties.country===d[0]&&normName(f.properties.name)===normName(d[2])))missingTargets.push(`${d[0]} : ${d[2]}`)}
+  if(failed.length||missingTargets.length){
+    showNetwork(`Référentiel administratif partiellement chargé${failed.length?' · échec : '+failed.join(', '):''}${missingTargets.length?' · unités manquantes : '+missingTargets.slice(0,5).join(', ')+(missingTargets.length>5?'…':''):''}`,'warn',12000);
+  }else console.info('IFS V18 : ADM0/ADM2 cohérents chargés pour les 4 pays.');
+  return !failed.length;
 }
 
 if(new URLSearchParams(location.search).get('embed')==='1'){document.body.classList.add('embed');document.querySelector('.topbar').style.display='none';document.querySelector('.layout').style.height='100vh'}
-initFilters();update(false);loadGuineaRealBoundaries().then(()=>update(false,false));
+initFilters();loadAllRealBoundaries().then(()=>update(false,false));
