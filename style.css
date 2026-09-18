@@ -111,3 +111,7 @@ body.dark #modalClose:hover{background:#3a5b4e!important;color:#ffffff!important
 
 /* V23 - tracés cartographiques plus nets */
 .leaflet-overlay-pane svg path{vector-effect:non-scaling-stroke;shape-rendering:geometricPrecision}
+
+
+/* V26 - équilibre cartographique : pays moins dominants, ADM2 plus lisibles */
+.leaflet-overlay-pane svg path{vector-effect:non-scaling-stroke;shape-rendering:geometricPrecision}

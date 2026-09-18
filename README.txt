@@ -97,3 +97,10 @@ V15 : correction du chargement ADM2 Guinée. L ancien lien GitHub renvoyait un p
 
 
 V22 : limites administratives haute précision HPSCGS (avec repli), aplats plus transparents, hydrographie renforcée, croix modale mode sombre, référentiel Excel géographique masqué.
+
+
+V26 - EQUILIBRE CARTOGRAPHIQUE
+- Frontieres des 4 pays IFS allegees (~1.9 px + halo discret).
+- Limites Admin 2 renforcees (~1.15 a 1.55 px) pour rester lisibles au niveau de travail.
+- Aplats legerement reduits pour conserver la lecture du fond de plan.
+- Geometries topologiques derivees des ADM2 conservees depuis la V24.
