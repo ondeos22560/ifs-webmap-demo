@@ -17,7 +17,7 @@
     <div class="logo">IFS</div>
     <div>
       <h1>Initiative Fleuve Sénégal</h1>
-      <div class="subtitle">Cartographie interactive des actions 2021–2026 <span>DÉMONSTRATEUR TDR</span> <span title="V26 : équilibre cartographique — frontières pays allégées, unités Admin 2 renforcées.">V26 · ÉQUILIBRE CARTOGRAPHIQUE</span></div>
+      <div class="subtitle">Cartographie interactive des actions 2021–2026 <span>DÉMONSTRATEUR TDR</span> <span title="V27 : hachures discrètes — fond de carte préservé, limites Admin 2 lisibles.">V27 · HACHURES DISCRÈTES</span></div>
     </div>
   </div>
   <nav class="top-actions">
@@ -77,8 +77,7 @@
       <button id="btnBasemap" class="map-tool" title="Fonds de carte" aria-expanded="false">🗺</button>
       <div id="basemapPanel" class="basemap-panel hidden" role="menu">
         <div class="basemap-title">Fonds de carte</div>
-        <button data-basemap="Neutre (clair)" class="basemap-option active">Neutre (clair)</button>
-        <button data-basemap="Plan OSM" class="basemap-option">Plan OSM</button>
+        <button data-basemap="Plan OSM" class="basemap-option active">Plan OSM</button>
         <button data-basemap="Humanitaire" class="basemap-option">Humanitaire</button>
         <button data-basemap="CyclOSM" class="basemap-option">CyclOSM</button>
         <button data-basemap="Relief" class="basemap-option">Relief</button>
@@ -95,6 +94,13 @@
             <option value="orgs">Intervenants</option>
             <option value="partners">Partenaires</option>
             <option value="funders">Bailleurs</option>
+          </select>
+        </label>
+        <label>Représentation des unités
+          <select id="fillMode">
+            <option value="hatch" selected>Hachures discrètes</option>
+            <option value="light">Aplat très léger</option>
+            <option value="outline">Contours uniquement</option>
           </select>
         </label>
         <label class="check"><input id="toggleHistoric" type="checkbox"> Historique 2010–2020</label>

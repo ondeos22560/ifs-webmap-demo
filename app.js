@@ -56,17 +56,16 @@ const connection=navigator.connection||navigator.mozConnection||navigator.webkit
 const lowBandwidth=!!(connection&&(connection.saveData||['slow-2g','2g'].includes(connection.effectiveType)));
 const tileOpts={updateWhenIdle:true,updateWhenZooming:!lowBandwidth,keepBuffer:lowBandwidth?1:2,detectRetina:false,crossOrigin:false};
 const tiles={
-"Neutre (clair)":L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{...tileOpts,attribution:"© OpenStreetMap contributors, © CARTO"}),
 "Plan OSM":L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{...tileOpts,attribution:"© OpenStreetMap contributors"}),
 "Humanitaire":L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",{...tileOpts,attribution:"© OpenStreetMap contributors, HOT"}),
 "CyclOSM":L.tileLayer("https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png",{...tileOpts,attribution:"© CyclOSM, OSM"}),
 "Relief":L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{...tileOpts,attribution:"© OpenTopoMap, OSM"}),
 "Satellite":L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{...tileOpts,attribution:"Tiles © Esri"})
 };
-let currentBase="Neutre (clair)"; tiles[currentBase].addTo(map);
+let currentBase="Plan OSM"; tiles[currentBase].addTo(map);
 
 let countryHalo=L.geoJSON(countryGeo,{style:{color:"#ffffff",weight:3.4,fill:false,opacity:.88,lineCap:"round",lineJoin:"round"},interactive:false}).addTo(map);
-let countryLayer=L.geoJSON(countryGeo,{style:{color:"#33414c",weight:2.1,fill:false,opacity:.98,lineCap:"round",lineJoin:"round"},interactive:false,onEachFeature:(f,l)=>l.bindTooltip(f.properties.name,{permanent:true,direction:"center",className:"country-label"})}).addTo(map);
+let countryLayer=L.geoJSON(countryGeo,{style:{color:"#0d5b49",weight:1.9,fill:false,opacity:.98,lineCap:"round",lineJoin:"round"},interactive:false,onEachFeature:(f,l)=>l.bindTooltip(f.properties.name,{permanent:true,direction:"center",className:"country-label"})}).addTo(map);
 let adminLayer,historicLayer,popLayer;
 let basinLayer=null,hydroLayer=null;
 function hydroStyle(f){let o=Number(f?.properties?.STRAHLER||f?.properties?.order||3);return {color:o>=7?'#0878c9':'#2b8fc9',weight:o>=7?3.6:o>=5?2.6:1.7,opacity:o>=7?.95:.78,lineCap:'round',lineJoin:'round'}}
@@ -118,7 +117,7 @@ function refreshFacetOptions(){
 function filtered(){let ys=+$('fYearStart').value,ye=+$('fYearEnd').value;return projects.filter(p=>(!$('fCountry').value||p.country===$('fCountry').value)&&(!$('fAdmin1').value||p.region===$('fAdmin1').value)&&(!$('fAdmin2').value||p.admin2===$('fAdmin2').value)&&(!$('fOrg').value||p.org===$('fOrg').value)&&(!$('fTheme').value||p.theme===$('fTheme').value)&&(!$('fStatus').value||p.status===$('fStatus').value)&&(!$('fFunder').value||p.funder===$('fFunder').value)&&(!$('fPartner').value||p.partner===$('fPartner').value)&&(!$('fOdg').value||p.odd===$('fOdg').value)&&p.end>=ys&&p.start<=ye)}
 function statsFor(adminName,arr){let a=uniqueProjects(arr.filter(p=>p.admin2===adminName));return {projects:a.length,beneficiaries:a.reduce((s,p)=>s+p.beneficiaries,0),orgs:new Set(a.map(p=>p.org)).size,partners:new Set(a.map(p=>p.partner)).size,funders:new Set(a.map(p=>p.funder)).size}}
 function metricValue(s){return s[$('metric').value]||0}
-function color(v,max){if(!v)return '#e7e5e1';let t=Math.min(1,v/(max||1));let light=82-t*47;return `hsl(28 78% ${light}%)`}
+function color(v,max){if(!v)return '#f2f3f2';let t=Math.min(1,v/(max||1));let light=96-t*10;return `hsl(206 18% ${light}%)`}
 const ADMIN_TERMS={
   "Sénégal":{adm1:"Région",adm2:"Département"},
   "Mali":{adm1:"Région",adm2:"Cercle"},
@@ -127,10 +126,24 @@ const ADMIN_TERMS={
 };
 function adminTerm(country,level='adm2'){return (ADMIN_TERMS[country]||{adm1:'Région',adm2:'Unité Admin 2'})[level]}
 function currentAdminTerm(){return $('fCountry').value?adminTerm($('fCountry').value,'adm2'):'Unité Admin 2'}
-function renderMap(arr){if(adminLayer)map.removeLayer(adminLayer);let vals=admin2Geo.features.map(f=>metricValue(statsFor(f.properties.name,arr)));let max=Math.max(1,...vals);adminLayer=L.geoJSON(admin2Geo,{interactive:false,style:f=>{let s=statsFor(f.properties.name,arr);return {color:metricValue(s)?'#7a5230':'#9aa0a6',weight:metricValue(s)?1.55:1.15,opacity:.96,fillColor:color(metricValue(s),max),fillOpacity:metricValue(s)?.5:.05,lineCap:'round',lineJoin:'round'}}}).addTo(map);
+function ensureHatchPatterns(){
+  const svg=map.getPanes().overlayPane.querySelector('svg');if(!svg)return;
+  let defs=svg.querySelector('defs[data-ifs-hatches]');if(defs)return;
+  defs=document.createElementNS('http://www.w3.org/2000/svg','defs');defs.setAttribute('data-ifs-hatches','1');
+  [1,2,3,4,5,6].forEach(i=>{const p=document.createElementNS('http://www.w3.org/2000/svg','pattern');p.setAttribute('id','ifsHatch'+i);p.setAttribute('patternUnits','userSpaceOnUse');p.setAttribute('width',String(14-i));p.setAttribute('height',String(14-i));p.setAttribute('patternTransform','rotate(35)');const line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('x1','0');line.setAttribute('y1','0');line.setAttribute('x2','0');line.setAttribute('y2',String(14-i));line.setAttribute('stroke','#506f78');line.setAttribute('stroke-width',i>=5?'1.25':'1');line.setAttribute('stroke-opacity',String(.28+i*.055));p.appendChild(line);defs.appendChild(p)});svg.insertBefore(defs,svg.firstChild);
+}
+function applyAdminFill(layer,arr,max){
+  const mode=$('fillMode')?.value||'hatch';ensureHatchPatterns();
+  layer.eachLayer(l=>{const v=metricValue(statsFor(l.feature.properties.name,arr));const path=l.getElement?.();if(!path)return;
+    if(mode==='hatch'&&v){const lvl=Math.max(1,Math.min(6,Math.ceil((v/(max||1))*6)));path.setAttribute('fill',`url(#ifsHatch${lvl})`);path.setAttribute('fill-opacity','1')}
+    else if(mode==='outline'){path.setAttribute('fill','none');path.setAttribute('fill-opacity','0')}
+    else {path.setAttribute('fill',color(v,max));path.setAttribute('fill-opacity',v?'0.12':'0.018')}
+  });
+}
+function renderMap(arr){if(adminLayer)map.removeLayer(adminLayer);let vals=admin2Geo.features.map(f=>metricValue(statsFor(f.properties.name,arr)));let max=Math.max(1,...vals);adminLayer=L.geoJSON(admin2Geo,{interactive:false,style:f=>{let s=statsFor(f.properties.name,arr);let active=metricValue(s)>0;return {color:active?'#48646b':'#829096',weight:active?1.45:1.05,opacity:active?.95:.72,fillColor:'#ffffff',fillOpacity:0,lineCap:'round',lineJoin:'round'}}}).addTo(map);applyAdminFill(adminLayer,arr,max);
 let term=currentAdminTerm();let metricNames={projects:`Nombre de projets couvrant ${term==='Unité Admin 2'?'l’unité':'le/la '+term.toLowerCase()}`,orgs:'Intervenants',partners:'Partenaires',funders:'Bailleurs'};$('legend').innerHTML=`<b>${metricNames[$('metric').value]}</b><span style="float:right;color:#6b7c76">${term}</span><div class="ramp"></div><div class="ends"><span>0</span><span>${fmt(max)}</span></div>`;
 if($('toggleHistoric').checked){if(historicLayer)map.removeLayer(historicLayer);historicLayer=L.geoJSON(admin2Geo,{style:f=>{let h=historic.find(x=>x.admin2===f.properties.name);return {color:'#7d4d8b',dashArray:'5 4',weight:2,fillColor:'#b892c1',fillOpacity:h?.projects?0.22:0}},interactive:false}).addTo(map)}else if(historicLayer){map.removeLayer(historicLayer);historicLayer=null}
-if($('togglePopulation').checked){if(popLayer)map.removeLayer(popLayer);popLayer=L.geoJSON(admin2Geo,{style:f=>({color:'#0f6e78',weight:1.2,fillColor:'#6cc4cd',fillOpacity:Math.min(.45,f.properties.population/600000)}),interactive:false}).addTo(map)}else if(popLayer){map.removeLayer(popLayer);popLayer=null}
+if($('togglePopulation').checked){if(popLayer)map.removeLayer(popLayer);popLayer=L.geoJSON(admin2Geo,{style:f=>({color:'#c27c00',weight:1.2,fillColor:'#f0bd65',fillOpacity:Math.min(.45,f.properties.population/600000)}),interactive:false}).addTo(map)}else if(popLayer){map.removeLayer(popLayer);popLayer=null}
 if($('toggleBasin').checked){if(!basinLayer)drawBasin();else if(!map.hasLayer(basinLayer))basinLayer.addTo(map)}else if(basinLayer&&map.hasLayer(basinLayer))map.removeLayer(basinLayer);
 if($('toggleHydro').checked){if(!hydroLayer)drawHydro(hydroFallback);else if(!map.hasLayer(hydroLayer))hydroLayer.addTo(map);hydroLayer.bringToFront()}else if(hydroLayer&&map.hasLayer(hydroLayer))map.removeLayer(hydroLayer);
 countryHalo.bringToFront();countryLayer.bringToFront();if($('toggleHydro').checked&&hydroLayer&&map.hasLayer(hydroLayer))hydroLayer.bringToFront();}
@@ -387,8 +400,8 @@ makeResizable($('leftResizer'),'left',240,520);makeResizable($('rightResizer'),'
 function applyTheme(dark,save=true){
   document.body.classList.toggle('dark',dark);
   $('btnTheme').textContent=dark?'☀':'☾'; $('btnTheme').title=dark?'Mode jour':'Mode nuit';
-  countryHalo.setStyle({color:dark?'#d7e5de':'#ffffff',weight:dark?6.5:7,opacity:dark?.9:.96});
-  countryLayer.setStyle({color:dark?'#c3cdd6':'#33414c',weight:dark?3.4:3.6,opacity:1,fill:false});
+  countryHalo.setStyle({color:dark?'#e6ece9':'#ffffff',weight:dark?3.1:3.0,opacity:dark?.72:.82});
+  countryLayer.setStyle({color:dark?'#9fc8bd':'#1c5c50',weight:dark?1.85:1.75,opacity:1,fill:false});
   if(save)localStorage.setItem('ifs-theme',dark?'dark':'light');
 }
 function switchBasemap(name){
@@ -447,7 +460,7 @@ analysisFilterIds.forEach(id=>$(id).addEventListener('change',()=>{
   // Tout changement d'analyse invalide une ancienne fiche projet/unité : retour automatique à la synthèse filtrée.
   update(doZoom,true);
 }));
-['metric','toggleHistoric','togglePopulation','toggleHydro','toggleBasin'].forEach(id=>$(id).addEventListener('change',()=>update(false,false)));
+['metric','fillMode','toggleHistoric','togglePopulation','toggleHydro','toggleBasin'].forEach(id=>$(id).addEventListener('change',()=>update(false,false)));
 
 // V25 : référentiel administratif topologiquement cohérent.
 // Principe : les contours pays ne sont PLUS chargés séparément.
@@ -466,9 +479,9 @@ function gbSimplifiedUrl(iso,adm){return `https://raw.githubusercontent.com/wmge
 async function fetchBoundary(iso,adm){
   try{return {geo:await fetchGeoJSON(gbCurrentFullUrl(iso,adm)),source:'geoBoundaries complet'}}
   catch(e1){
-    console.warn(`IFS V26 : référentiel complet ${iso} ${adm} indisponible, essai HPSCGS`,e1);
+    console.warn(`IFS V27 : référentiel complet ${iso} ${adm} indisponible, essai HPSCGS`,e1);
     try{return {geo:await fetchGeoJSON(gbLegacyFullUrl(iso,adm)),source:'HPSCGS haute précision (repli)'}}
-    catch(e2){console.warn(`IFS V26 : HPSCGS ${iso} ${adm} indisponible, repli simplifié`,e2);return {geo:await fetchGeoJSON(gbSimplifiedUrl(iso,adm)),source:'simplifié de secours'}}
+    catch(e2){console.warn(`IFS V27 : HPSCGS ${iso} ${adm} indisponible, repli simplifié`,e2);return {geo:await fetchGeoJSON(gbSimplifiedUrl(iso,adm)),source:'simplifié de secours'}}
   }
 }
 function normName(x){return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ').trim()}
@@ -500,7 +513,7 @@ function buildCountryGeoFromAdmin2(features){
         feats.filter(Boolean).forEach((f,i)=>out.push({...f,properties:{...(f.properties||{}),name:country,country,id:`derived-${country}-${i}`,derivedFromAdmin2:true}}));
         continue;
       }
-    }catch(e){console.warn(`IFS V26 : dissolution ${country} impossible`,e)}
+    }catch(e){console.warn(`IFS V27 : dissolution ${country} impossible`,e)}
     // Secours sans Turf : MultiPolygon composé des ADM2. Il garantit au moins la même géométrie source.
     const polys=[];
     fs.forEach(f=>{if(f.geometry.type==='Polygon')polys.push(f.geometry.coordinates);else if(f.geometry.type==='MultiPolygon')polys.push(...f.geometry.coordinates)});
@@ -510,8 +523,8 @@ function buildCountryGeoFromAdmin2(features){
 }
 function rebuildCountryLayers(){
   if(countryHalo)map.removeLayer(countryHalo);if(countryLayer)map.removeLayer(countryLayer);
-  countryHalo=L.geoJSON(countryGeo,{style:{color:'#ffffff',weight:3.4,fill:false,opacity:.88,lineCap:'round',lineJoin:'round'},interactive:false}).addTo(map);
-  countryLayer=L.geoJSON(countryGeo,{style:{color:'#33414c',weight:2.1,fill:false,opacity:.98,lineCap:'round',lineJoin:'round'},interactive:false,onEachFeature:(f,l)=>l.bindTooltip(f.properties.name,{permanent:true,direction:'center',className:'country-label'})}).addTo(map);
+  countryHalo=L.geoJSON(countryGeo,{style:{color:'#ffffff',weight:3.0,fill:false,opacity:.82,lineCap:'round',lineJoin:'round'},interactive:false}).addTo(map);
+  countryLayer=L.geoJSON(countryGeo,{style:{color:'#1c5c50',weight:1.75,fill:false,opacity:.98,lineCap:'round',lineJoin:'round'},interactive:false,onEachFeature:(f,l)=>l.bindTooltip(f.properties.name,{permanent:true,direction:'center',className:'country-label'})}).addTo(map);
 }
 async function loadAllRealBoundaries(){
   const adm2Features=[];const failures=[];
@@ -523,8 +536,8 @@ async function loadAllRealBoundaries(){
         const name=String(raw).trim();
         adm2Features.push({...f,properties:{...f.properties,country,region:knownRegion(country,name),name,id:`${cfg.iso}-adm2-${i}`,population:0,realBoundary:true}});
       });
-      console.info(`IFS V26 : ${country} chargé (${g2.features.length} unités ADM2) — ${b2.source}.`);
-    }catch(e){failures.push(country);console.warn(`IFS V26 : référentiel ${country} indisponible`,e)}
+      console.info(`IFS V27 : ${country} chargé (${g2.features.length} unités ADM2) — ${b2.source}.`);
+    }catch(e){failures.push(country);console.warn(`IFS V27 : référentiel ${country} indisponible`,e)}
   }
   const loadedCountries=new Set(adm2Features.map(f=>f.properties.country));
   const remaining=admin2Geo.features.filter(f=>!loadedCountries.has(f.properties.country));
