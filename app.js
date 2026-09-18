@@ -448,9 +448,10 @@ analysisFilterIds.forEach(id=>$(id).addEventListener('change',()=>{
 }));
 ['metric','toggleHistoric','togglePopulation','toggleHydro','toggleBasin'].forEach(id=>$(id).addEventListener('change',()=>update(false,false)));
 
-// V19 : référentiel administratif homogène pour les quatre pays.
-// Toutes les limites ADM0 et ADM2 proviennent du MEME commit geoBoundaries afin d'éviter
-// les décalages de frontière observés quand plusieurs référentiels étaient mélangés.
+// V24 : référentiel administratif topologiquement cohérent.
+// Principe : les contours pays ne sont PLUS chargés séparément.
+// Ils sont reconstruits par dissolution des ADM2 réellement affichés, afin que
+// la frontière extérieure d'un pays partage exactement les mêmes sommets que ses unités.
 const GEOBOUNDARIES_COMMIT='9469f09';
 const COUNTRY_REFS={
   'Sénégal':{iso:'SEN'},
@@ -458,16 +459,15 @@ const COUNTRY_REFS={
   'Mauritanie':{iso:'MRT'},
   'Guinée':{iso:'GIN'}
 };
-const COUNTRY_EN_TO_FR={Senegal:'Sénégal',Mali:'Mali',Mauritania:'Mauritanie',Guinea:'Guinée'};
 function gbCurrentFullUrl(iso,adm){return `https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/${GEOBOUNDARIES_COMMIT}/releaseData/gbOpen/${iso}/${adm}/geoBoundaries-${iso}-${adm}.geojson`}
 function gbLegacyFullUrl(iso,adm){return `https://www.geoboundaries.org/data/geoBoundariesHPSCGS-3_0_0/${iso}/${adm}/geoBoundariesHPSCGS-3_0_0-${iso}-${adm}.geojson`}
 function gbSimplifiedUrl(iso,adm){return `https://raw.githubusercontent.com/wmgeolab/geoBoundaries/${GEOBOUNDARIES_COMMIT}/releaseData/gbOpen/${iso}/${adm}/geoBoundaries-${iso}-${adm}_simplified.geojson`}
 async function fetchBoundary(iso,adm){
-  try{return {geo:await fetchGeoJSON(gbCurrentFullUrl(iso,adm)),source:'geoBoundaries 2023 / source OCHA-WFP-Gouvernement'}}
+  try{return {geo:await fetchGeoJSON(gbCurrentFullUrl(iso,adm)),source:'geoBoundaries complet'}}
   catch(e1){
-    console.warn(`IFS V23 : référentiel courant ${iso} ${adm} indisponible, essai HPSCGS`,e1);
+    console.warn(`IFS V24 : référentiel complet ${iso} ${adm} indisponible, essai HPSCGS`,e1);
     try{return {geo:await fetchGeoJSON(gbLegacyFullUrl(iso,adm)),source:'HPSCGS haute précision (repli)'}}
-    catch(e2){console.warn(`IFS V23 : HPSCGS ${iso} ${adm} indisponible, repli simplifié`,e2);return {geo:await fetchGeoJSON(gbSimplifiedUrl(iso,adm)),source:'simplifié de secours'}}
+    catch(e2){console.warn(`IFS V24 : HPSCGS ${iso} ${adm} indisponible, repli simplifié`,e2);return {geo:await fetchGeoJSON(gbSimplifiedUrl(iso,adm)),source:'simplifié de secours'}}
   }
 }
 function normName(x){return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ').trim()}
@@ -478,31 +478,59 @@ async function fetchGeoJSON(url){
   const txt=await r.text();if(txt.trim().startsWith('version https://git-lfs'))throw new Error('Git LFS pointer');
   const g=JSON.parse(txt);if(!g||!Array.isArray(g.features))throw new Error('GeoJSON invalide');return g;
 }
+function buildCountryGeoFromAdmin2(features){
+  const out=[];
+  for(const country of Object.keys(COUNTRY_REFS)){
+    const fs=features.filter(f=>f.properties.country===country && f.geometry);
+    if(!fs.length)continue;
+    try{
+      if(window.turf){
+        // Une seule géométrie de frontière est fabriquée à partir des mêmes ADM2 que la carte.
+        let dissolved;
+        try{dissolved=turf.dissolve(turf.featureCollection(fs.map(f=>turf.feature(f.geometry,{country}))));}
+        catch(_){
+          let merged=turf.feature(fs[0].geometry,{country});
+          for(let i=1;i<fs.length;i++){
+            try{merged=turf.union(turf.featureCollection([merged,turf.feature(fs[i].geometry,{country})]));}catch(e){}
+          }
+          dissolved=merged;
+        }
+        const feats=dissolved?.type==='FeatureCollection'?dissolved.features:[dissolved];
+        feats.filter(Boolean).forEach((f,i)=>out.push({...f,properties:{...(f.properties||{}),name:country,country,id:`derived-${country}-${i}`,derivedFromAdmin2:true}}));
+        continue;
+      }
+    }catch(e){console.warn(`IFS V24 : dissolution ${country} impossible`,e)}
+    // Secours sans Turf : MultiPolygon composé des ADM2. Il garantit au moins la même géométrie source.
+    const polys=[];
+    fs.forEach(f=>{if(f.geometry.type==='Polygon')polys.push(f.geometry.coordinates);else if(f.geometry.type==='MultiPolygon')polys.push(...f.geometry.coordinates)});
+    out.push({type:'Feature',properties:{name:country,country,id:`derived-${country}`,derivedFromAdmin2:true},geometry:{type:'MultiPolygon',coordinates:polys}});
+  }
+  return {type:'FeatureCollection',features:out};
+}
 function rebuildCountryLayers(){
   if(countryHalo)map.removeLayer(countryHalo);if(countryLayer)map.removeLayer(countryLayer);
-  countryHalo=L.geoJSON(countryGeo,{style:{color:'white',weight:3.2,fill:false,opacity:.96,lineCap:'butt',lineJoin:'miter'},interactive:false}).addTo(map);
-  countryLayer=L.geoJSON(countryGeo,{style:{color:'#0d5b49',weight:2.1,fillColor:'#72c5a4',fillOpacity:document.body.classList.contains('dark')?.028:.035,opacity:1,lineCap:'butt',lineJoin:'miter'},interactive:false,onEachFeature:(f,l)=>l.bindTooltip(f.properties.name,{permanent:true,direction:'center',className:'country-label'})}).addTo(map);
+  countryHalo=L.geoJSON(countryGeo,{style:{color:'white',weight:3.6,fill:false,opacity:.9,lineCap:'round',lineJoin:'round'},interactive:false}).addTo(map);
+  countryLayer=L.geoJSON(countryGeo,{style:{color:'#0a5a49',weight:2.0,fill:false,opacity:.98,lineCap:'round',lineJoin:'round'},interactive:false,onEachFeature:(f,l)=>l.bindTooltip(f.properties.name,{permanent:true,direction:'center',className:'country-label'})}).addTo(map);
 }
 async function loadAllRealBoundaries(){
-  const adm0Features=[],adm2Features=[];const failures=[];
+  const adm2Features=[];const failures=[];
   for(const [country,cfg] of Object.entries(COUNTRY_REFS)){
     try{
-      const [b0,b2]=await Promise.all([fetchBoundary(cfg.iso,'ADM0'),fetchBoundary(cfg.iso,'ADM2')]);
-      const g0=b0.geo,g2=b2.geo;
-      g0.features.forEach((f,i)=>adm0Features.push({...f,properties:{...f.properties,name:country,country,id:`${cfg.iso}-adm0-${i}`,realBoundary:true}}));
+      const b2=await fetchBoundary(cfg.iso,'ADM2');const g2=b2.geo;
       g2.features.forEach((f,i)=>{
         const raw=f.properties.shapeName||f.properties.name||`ADM2 ${i+1}`;
         const name=String(raw).trim();
         adm2Features.push({...f,properties:{...f.properties,country,region:knownRegion(country,name),name,id:`${cfg.iso}-adm2-${i}`,population:0,realBoundary:true}});
       });
-      console.info(`IFS V23 : ${country} chargé (${g2.features.length} unités ADM2) — ${b2.source}.`);
-    }catch(e){failures.push(country);console.warn(`IFS V23 : référentiel ${country} indisponible`,e)}
+      console.info(`IFS V24 : ${country} chargé (${g2.features.length} unités ADM2) — ${b2.source}.`);
+    }catch(e){failures.push(country);console.warn(`IFS V24 : référentiel ${country} indisponible`,e)}
   }
-  if(adm0Features.length){countryGeo={type:'FeatureCollection',features:adm0Features};rebuildCountryLayers()}
-  // On ne conserve aucun rectangle fictif pour les pays dont le vrai référentiel a été chargé.
-  const loadedCountries=new Set(adm0Features.map(f=>f.properties.country));
+  const loadedCountries=new Set(adm2Features.map(f=>f.properties.country));
   const remaining=admin2Geo.features.filter(f=>!loadedCountries.has(f.properties.country));
   admin2Geo={type:'FeatureCollection',features:[...remaining,...adm2Features]};
+  // Les pays sont reconstruits APRES chargement des ADM2 : aucun ADM0 indépendant n'est affiché.
+  countryGeo=buildCountryGeoFromAdmin2(admin2Geo.features.filter(f=>loadedCountries.has(f.properties.country)));
+  if(countryGeo.features.length)rebuildCountryLayers();
   if(failures.length)showNetwork(`Référentiel administratif indisponible : ${failures.join(', ')}. Les autres pays restent utilisables.`,'warn',9000);
   update(false,false);
   return failures.length===0;

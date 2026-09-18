@@ -1,3 +1,6 @@
+V24 - Limites topologiques
+Les contours pays sont derives des ADM2 affiches (dissolve Turf) afin d'utiliser exactement la meme geometrie de frontiere.
+
 V20 - EXCEL GUIDE ET EN-TETES FRANCAIS
 
 - En-têtes Excel/CSV en français.
