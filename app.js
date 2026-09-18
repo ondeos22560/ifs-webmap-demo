@@ -126,7 +126,7 @@ const ADMIN_TERMS={
 };
 function adminTerm(country,level='adm2'){return (ADMIN_TERMS[country]||{adm1:'Région',adm2:'Unité Admin 2'})[level]}
 function currentAdminTerm(){return $('fCountry').value?adminTerm($('fCountry').value,'adm2'):'Unité Admin 2'}
-function renderMap(arr){if(adminLayer)map.removeLayer(adminLayer);let vals=admin2Geo.features.map(f=>metricValue(statsFor(f.properties.name,arr)));let max=Math.max(1,...vals);adminLayer=L.geoJSON(admin2Geo,{interactive:false,style:f=>{let s=statsFor(f.properties.name,arr);return {color:metricValue(s)?'#ffffff':'#7f948c',weight:metricValue(s)?1.35:0.9,fillColor:color(metricValue(s),max),fillOpacity:metricValue(s)?.24:.045,lineCap:'butt',lineJoin:'miter'}}}).addTo(map);
+function renderMap(arr){if(adminLayer)map.removeLayer(adminLayer);let vals=admin2Geo.features.map(f=>metricValue(statsFor(f.properties.name,arr)));let max=Math.max(1,...vals);adminLayer=L.geoJSON(admin2Geo,{interactive:false,style:f=>{let s=statsFor(f.properties.name,arr);return {color:metricValue(s)?'#dcebe5':'#8fa39b',weight:metricValue(s)?1.05:0.7,fillColor:color(metricValue(s),max),fillOpacity:metricValue(s)?.25:.035,lineCap:'butt',lineJoin:'miter'}}}).addTo(map);
 let term=currentAdminTerm();let metricNames={projects:`Nombre de projets couvrant ${term==='Unité Admin 2'?'l’unité':'le/la '+term.toLowerCase()}`,orgs:'Intervenants',partners:'Partenaires',funders:'Bailleurs'};$('legend').innerHTML=`<b>${metricNames[$('metric').value]}</b><span style="float:right;color:#6b7c76">${term}</span><div class="ramp"></div><div class="ends"><span>0</span><span>${fmt(max)}</span></div>`;
 if($('toggleHistoric').checked){if(historicLayer)map.removeLayer(historicLayer);historicLayer=L.geoJSON(admin2Geo,{style:f=>{let h=historic.find(x=>x.admin2===f.properties.name);return {color:'#7d4d8b',dashArray:'5 4',weight:2,fillColor:'#b892c1',fillOpacity:h?.projects?0.22:0}},interactive:false}).addTo(map)}else if(historicLayer){map.removeLayer(historicLayer);historicLayer=null}
 if($('togglePopulation').checked){if(popLayer)map.removeLayer(popLayer);popLayer=L.geoJSON(admin2Geo,{style:f=>({color:'#c27c00',weight:1.2,fillColor:'#f0bd65',fillOpacity:Math.min(.45,f.properties.population/600000)}),interactive:false}).addTo(map)}else if(popLayer){map.removeLayer(popLayer);popLayer=null}
@@ -386,8 +386,8 @@ makeResizable($('leftResizer'),'left',240,520);makeResizable($('rightResizer'),'
 function applyTheme(dark,save=true){
   document.body.classList.toggle('dark',dark);
   $('btnTheme').textContent=dark?'☀':'☾'; $('btnTheme').title=dark?'Mode jour':'Mode nuit';
-  countryHalo.setStyle({color:dark?'#d7e5de':'white',weight:dark?4.5:6,opacity:dark?.8:.95});
-  countryLayer.setStyle({color:dark?'#8ed7bd':'#176b55',weight:dark?2.4:2.8,opacity:1,fillColor:'#72c5a4',fillOpacity:dark?.035:.055});
+  countryHalo.setStyle({color:dark?'#d7e5de':'#ffffff',weight:dark?6.5:7,opacity:dark?.9:.96});
+  countryLayer.setStyle({color:dark?'#8ed7bd':'#064f40',weight:dark?3.4:3.6,opacity:1,fillColor:'#46a98a',fillOpacity:dark?.06:.075});
   if(save)localStorage.setItem('ifs-theme',dark?'dark':'light');
 }
 function switchBasemap(name){
@@ -448,7 +448,7 @@ analysisFilterIds.forEach(id=>$(id).addEventListener('change',()=>{
 }));
 ['metric','toggleHistoric','togglePopulation','toggleHydro','toggleBasin'].forEach(id=>$(id).addEventListener('change',()=>update(false,false)));
 
-// V24 : référentiel administratif topologiquement cohérent.
+// V25 : référentiel administratif topologiquement cohérent.
 // Principe : les contours pays ne sont PLUS chargés séparément.
 // Ils sont reconstruits par dissolution des ADM2 réellement affichés, afin que
 // la frontière extérieure d'un pays partage exactement les mêmes sommets que ses unités.
@@ -465,9 +465,9 @@ function gbSimplifiedUrl(iso,adm){return `https://raw.githubusercontent.com/wmge
 async function fetchBoundary(iso,adm){
   try{return {geo:await fetchGeoJSON(gbCurrentFullUrl(iso,adm)),source:'geoBoundaries complet'}}
   catch(e1){
-    console.warn(`IFS V24 : référentiel complet ${iso} ${adm} indisponible, essai HPSCGS`,e1);
+    console.warn(`IFS V25 : référentiel complet ${iso} ${adm} indisponible, essai HPSCGS`,e1);
     try{return {geo:await fetchGeoJSON(gbLegacyFullUrl(iso,adm)),source:'HPSCGS haute précision (repli)'}}
-    catch(e2){console.warn(`IFS V24 : HPSCGS ${iso} ${adm} indisponible, repli simplifié`,e2);return {geo:await fetchGeoJSON(gbSimplifiedUrl(iso,adm)),source:'simplifié de secours'}}
+    catch(e2){console.warn(`IFS V25 : HPSCGS ${iso} ${adm} indisponible, repli simplifié`,e2);return {geo:await fetchGeoJSON(gbSimplifiedUrl(iso,adm)),source:'simplifié de secours'}}
   }
 }
 function normName(x){return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ').trim()}
@@ -499,7 +499,7 @@ function buildCountryGeoFromAdmin2(features){
         feats.filter(Boolean).forEach((f,i)=>out.push({...f,properties:{...(f.properties||{}),name:country,country,id:`derived-${country}-${i}`,derivedFromAdmin2:true}}));
         continue;
       }
-    }catch(e){console.warn(`IFS V24 : dissolution ${country} impossible`,e)}
+    }catch(e){console.warn(`IFS V25 : dissolution ${country} impossible`,e)}
     // Secours sans Turf : MultiPolygon composé des ADM2. Il garantit au moins la même géométrie source.
     const polys=[];
     fs.forEach(f=>{if(f.geometry.type==='Polygon')polys.push(f.geometry.coordinates);else if(f.geometry.type==='MultiPolygon')polys.push(...f.geometry.coordinates)});
@@ -509,8 +509,8 @@ function buildCountryGeoFromAdmin2(features){
 }
 function rebuildCountryLayers(){
   if(countryHalo)map.removeLayer(countryHalo);if(countryLayer)map.removeLayer(countryLayer);
-  countryHalo=L.geoJSON(countryGeo,{style:{color:'white',weight:3.6,fill:false,opacity:.9,lineCap:'round',lineJoin:'round'},interactive:false}).addTo(map);
-  countryLayer=L.geoJSON(countryGeo,{style:{color:'#0a5a49',weight:2.0,fill:false,opacity:.98,lineCap:'round',lineJoin:'round'},interactive:false,onEachFeature:(f,l)=>l.bindTooltip(f.properties.name,{permanent:true,direction:'center',className:'country-label'})}).addTo(map);
+  countryHalo=L.geoJSON(countryGeo,{style:{color:'#ffffff',weight:7.0,fill:false,opacity:.96,lineCap:'round',lineJoin:'round'},interactive:false}).addTo(map);
+  countryLayer=L.geoJSON(countryGeo,{style:{color:'#064f40',weight:3.6,fillColor:'#46a98a',fillOpacity:.075,opacity:1,lineCap:'round',lineJoin:'round'},interactive:false,onEachFeature:(f,l)=>l.bindTooltip(f.properties.name,{permanent:true,direction:'center',className:'country-label'})}).addTo(map);
 }
 async function loadAllRealBoundaries(){
   const adm2Features=[];const failures=[];
@@ -522,8 +522,8 @@ async function loadAllRealBoundaries(){
         const name=String(raw).trim();
         adm2Features.push({...f,properties:{...f.properties,country,region:knownRegion(country,name),name,id:`${cfg.iso}-adm2-${i}`,population:0,realBoundary:true}});
       });
-      console.info(`IFS V24 : ${country} chargé (${g2.features.length} unités ADM2) — ${b2.source}.`);
-    }catch(e){failures.push(country);console.warn(`IFS V24 : référentiel ${country} indisponible`,e)}
+      console.info(`IFS V25 : ${country} chargé (${g2.features.length} unités ADM2) — ${b2.source}.`);
+    }catch(e){failures.push(country);console.warn(`IFS V25 : référentiel ${country} indisponible`,e)}
   }
   const loadedCountries=new Set(adm2Features.map(f=>f.properties.country));
   const remaining=admin2Geo.features.filter(f=>!loadedCountries.has(f.properties.country));
