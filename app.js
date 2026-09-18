@@ -126,8 +126,8 @@ const ADMIN_TERMS={
 };
 function adminTerm(country,level='adm2'){return (ADMIN_TERMS[country]||{adm1:'Région',adm2:'Unité Admin 2'})[level]}
 function currentAdminTerm(){return $('fCountry').value?adminTerm($('fCountry').value,'adm2'):'Unité Admin 2'}
-function renderMap(arr){if(adminLayer)map.removeLayer(adminLayer);let vals=admin2Geo.features.map(f=>metricValue(statsFor(f.properties.name,arr)));let max=Math.max(1,...vals);adminLayer=L.geoJSON(admin2Geo,{interactive:false,style:f=>{let s=statsFor(f.properties.name,arr);return {color:metricValue(s)?'#713844':'#6f817b',weight:metricValue(s)?1.65:1.15,opacity:.96,fillColor:color(metricValue(s),max),fillOpacity:metricValue(s)?.34:0,lineCap:'round',lineJoin:'round'}}}).addTo(map);
-let term=currentAdminTerm();let metricNames={projects:`Nombre de projets couvrant ${term==='Unité Admin 2'?'l’unité':'le/la '+term.toLowerCase()}`,orgs:'Intervenants',partners:'Partenaires',funders:'Bailleurs'};$('legend').innerHTML=`<b>${metricNames[$('metric').value]}</b><span style="float:right;color:#6b7c76">${term}</span><div class="ramp"></div><div class="ends"><span>0</span><span>${fmt(max)}</span></div>`;
+function renderMap(arr){if(adminLayer)map.removeLayer(adminLayer);let vals=admin2Geo.features.map(f=>metricValue(statsFor(f.properties.name,arr)));let max=Math.max(1,...vals);adminLayer=L.geoJSON(admin2Geo,{interactive:false,style:f=>{let s=statsFor(f.properties.name,arr);return {color:metricValue(s)?'#e56b1f':'#6f817b',weight:metricValue(s)?2.35:1.0,opacity:metricValue(s)?1:.82,fillColor:color(metricValue(s),max),fillOpacity:metricValue(s)?.30:0,lineCap:'round',lineJoin:'round'}}}).addTo(map);
+let term=currentAdminTerm();let metricNames={projects:`Nombre de projets couvrant ${term==='Unité Admin 2'?'l’unité':'le/la '+term.toLowerCase()}`,orgs:'Intervenants',partners:'Partenaires',funders:'Bailleurs'};$('legend').innerHTML=`<b>${metricNames[$('metric').value]}</b><span style="float:right;color:#6b7c76">${term}</span><div class="ramp"></div><div class="ends"><span>0</span><span>${fmt(max)}</span></div><div style="margin-top:7px;font-size:11px;display:flex;align-items:center;gap:7px"><span style="display:inline-block;width:24px;border-top:3px solid #e56b1f"></span>Unité avec projet</div>`;
 if($('toggleHistoric').checked){if(historicLayer)map.removeLayer(historicLayer);historicLayer=L.geoJSON(admin2Geo,{style:f=>{let h=historic.find(x=>x.admin2===f.properties.name);return {color:'#7d4d8b',dashArray:'5 4',weight:2,fillColor:'#b892c1',fillOpacity:h?.projects?0.22:0}},interactive:false}).addTo(map)}else if(historicLayer){map.removeLayer(historicLayer);historicLayer=null}
 if($('togglePopulation').checked){if(popLayer)map.removeLayer(popLayer);popLayer=L.geoJSON(admin2Geo,{style:f=>({color:'#c27c00',weight:1.2,fillColor:'#f0bd65',fillOpacity:Math.min(.45,f.properties.population/600000)}),interactive:false}).addTo(map)}else if(popLayer){map.removeLayer(popLayer);popLayer=null}
 if($('toggleBasin').checked){if(!basinLayer)drawBasin();else if(!map.hasLayer(basinLayer))basinLayer.addTo(map)}else if(basinLayer&&map.hasLayer(basinLayer))map.removeLayer(basinLayer);
@@ -464,7 +464,7 @@ function gbLegacyFullUrl(iso,adm){return `https://www.geoboundaries.org/data/geo
 async function fetchBoundary(iso,adm){
   try{return {geo:await fetchGeoJSON(gbCurrentFullUrl(iso,adm)),source:'geoBoundaries complet'}}
   catch(e1){
-    console.warn(`IFS V30 : référentiel complet ${iso} ${adm} indisponible, essai HPSCGS`,e1);
+    console.warn(`IFS V31 : référentiel complet ${iso} ${adm} indisponible, essai HPSCGS`,e1);
     return {geo:await fetchGeoJSON(gbLegacyFullUrl(iso,adm)),source:'HPSCGS haute précision (repli)'};
   }
 }
@@ -510,9 +510,9 @@ async function loadCountryRealBoundary(country,cfg){
     countryGeo=buildCountryGeoFromAdmin2(admin2Geo.features);
     rebuildCountryLayers();
     update(false,false);
-    console.info(`IFS V30 : ${country} chargé (${g2.features.length} unités ADM2) — ${b2.source}.`);
+    console.info(`IFS V31 : ${country} chargé (${g2.features.length} unités ADM2) — ${b2.source}.`);
   }catch(err){
-    console.warn(`IFS V30 : référentiel ${country} indisponible`,err);
+    console.warn(`IFS V31 : référentiel ${country} indisponible`,err);
     showNetwork(`Référentiel détaillé indisponible pour ${country}. La carte reste utilisable avec le référentiel léger.`,'warn',6500);
   }finally{loadingBoundaryCountries.delete(country)}
 }
