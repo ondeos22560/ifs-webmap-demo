@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect rx=%2212%22 width=%2264%22 height=%2264%22 fill=%22%23176b55%22/><text x=%2232%22 y=%2241%22 text-anchor=%22middle%22 font-size=%2224%22 font-family=%22Arial%22 font-weight=%22700%22 fill=%22white%22>IFS</text></svg>">
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="style.css?v=26.0">
+  <link rel="stylesheet" href="style.css?v=28.0">
 </head>
 <body>
 <header class="topbar">
@@ -17,7 +17,7 @@
     <div class="logo">IFS</div>
     <div>
       <h1>Initiative Fleuve Sénégal</h1>
-      <div class="subtitle">Cartographie interactive des actions 2021–2026 <span>DÉMONSTRATEUR TDR</span> <span title="V27 : hachures discrètes — fond de carte préservé, limites Admin 2 lisibles.">V27 · HACHURES DISCRÈTES</span></div>
+      <div class="subtitle">Cartographie interactive des actions 2021–2026 <span>DÉMONSTRATEUR TDR</span> <span title="V28 : retour aux aplats légers, palette chaude contrastée et chargement parallèle des limites.">V28 · COULEURS CONTRASTÉES</span></div>
     </div>
   </div>
   <nav class="top-actions">
@@ -96,13 +96,6 @@
             <option value="funders">Bailleurs</option>
           </select>
         </label>
-        <label>Représentation des unités
-          <select id="fillMode">
-            <option value="hatch" selected>Hachures discrètes</option>
-            <option value="light">Aplat très léger</option>
-            <option value="outline">Contours uniquement</option>
-          </select>
-        </label>
         <label class="check"><input id="toggleHistoric" type="checkbox"> Historique 2010–2020</label>
         <label class="check"><input id="toggleHydro" type="checkbox" checked> Réseau hydrographique</label>
         <label class="check"><input id="toggleBasin" type="checkbox" checked> Emprise indicative du bassin</label>
@@ -159,6 +152,6 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 <script src="data/admin0.js?v=9.0"></script>
-<script src="app.js?v=26.0"></script>
+<script src="app.js?v=28.0"></script>
 </body>
 </html>

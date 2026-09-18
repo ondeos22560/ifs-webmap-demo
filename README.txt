@@ -104,3 +104,11 @@ V26 - EQUILIBRE CARTOGRAPHIQUE
 - Limites Admin 2 renforcees (~1.15 a 1.55 px) pour rester lisibles au niveau de travail.
 - Aplats legerement reduits pour conserver la lecture du fond de plan.
 - Geometries topologiques derivees des ADM2 conservees depuis la V24.
+
+
+V28 - COULEURS CONTRASTEES ET DEMARRAGE ALLEGE
+- Base restauree depuis la V26 stable.
+- Suppression des hachures SVG de la V27.
+- Palette chaude jaune/orange/rouge/prune pour mieux ressortir sur OSM, relief et satellite.
+- Unites sans projet sans aplat de remplissage.
+- Chargement des 4 referentiels ADM2 en parallele.
