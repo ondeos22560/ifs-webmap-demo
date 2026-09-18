@@ -6,10 +6,9 @@
   <meta name="description" content="Démonstrateur de la WebMap Initiative Fleuve Sénégal : projets 2021-2026, historique Traverse 50, filtres et indicateurs dynamiques.">
   <meta name="robots" content="index,follow">
   <title>Initiative Fleuve Sénégal — WebMap</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect rx=%2212%22 width=%2264%22 height=%2264%22 fill=%22%23176b55%22/><text x=%2232%22 y=%2241%22 text-anchor=%22middle%22 font-size=%2224%22 font-family=%22Arial%22 font-weight=%22700%22 fill=%22white%22>IFS</text></svg>">
   <link rel="preconnect" href="https://unpkg.com">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="style.css?v=23.0">
+  <link rel="stylesheet" href="style.css?v=22.0">
 </head>
 <body>
 <header class="topbar">
@@ -17,7 +16,7 @@
     <div class="logo">IFS</div>
     <div>
       <h1>Initiative Fleuve Sénégal</h1>
-      <div class="subtitle">Cartographie interactive des actions 2021–2026 <span>DÉMONSTRATEUR TDR</span> <span title="V21 : modèle Excel en français avec listes de choix cohérentes et dépendantes du pays.">V23 · LIMITES NETTES</span></div>
+      <div class="subtitle">Cartographie interactive des actions 2021–2026 <span>DÉMONSTRATEUR TDR</span> <span title="V21 : modèle Excel en français avec listes de choix cohérentes et dépendantes du pays.">V21 · EXCEL GUIDÉ</span></div>
     </div>
   </div>
   <nav class="top-actions">
@@ -151,6 +150,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="data/admin0.js?v=9.0"></script>
-<script src="app.js?v=23.0"></script>
+<script src="app.js?v=22.0"></script>
 </body>
 </html>

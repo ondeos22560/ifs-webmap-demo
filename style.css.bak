@@ -108,6 +108,3 @@ body.dark #modalClose{background:#28453a!important;color:#ffffff!important;borde
 body.dark #modalClose:hover{background:#3a5b4e!important;color:#ffffff!important}
 /* Les aplats statistiques laissent le fond de carte lisible. */
 .leaflet-overlay-pane path{transition:fill-opacity .15s ease,stroke-width .15s ease}
-
-/* V23 - tracés cartographiques plus nets */
-.leaflet-overlay-pane svg path{vector-effect:non-scaling-stroke;shape-rendering:geometricPrecision}
